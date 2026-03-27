@@ -170,7 +170,8 @@ function renderChart() {
         yAxisIndex: 1,
         symbol: "none",
         data: props.samples.map((sample) => sample.temperature),
-        lineStyle: { width: 2, color: "#38bdf8" },
+        lineStyle: { width: 3, color: "#fb923c" },
+        areaStyle: { color: "rgba(251, 146, 60, 0.10)" },
       },
       {
         name: "血氧",

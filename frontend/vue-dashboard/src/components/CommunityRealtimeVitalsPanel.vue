@@ -13,7 +13,7 @@ import {
 import { type ComposeOption, init, use, type ECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import type { CommunityDashboardDeviceItem, HealthSample } from "../api/client";
+import type { CommunityDashboardDeviceItem, CommunityDashboardElderItem, HealthSample } from "../api/client";
 import { riskLevelToChinese } from "../utils/riskLevel";
 
 use([CanvasRenderer, GraphicComponent, GridComponent, LegendComponent, LineChart, TooltipComponent]);
@@ -23,6 +23,7 @@ type RealtimeOption = ComposeOption<
 >;
 
 const props = defineProps<{
+  elder: CommunityDashboardElderItem | null;
   device: CommunityDashboardDeviceItem | null;
   samples: HealthSample[];
   currentSample?: HealthSample | null;
@@ -43,12 +44,34 @@ function parseBloodPressure(value?: string | null) {
   };
 }
 
+function hasNumericValue(value?: number | null) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 const hasSamples = computed(() => props.samples.length > 0);
+const isNoDevice = computed(() => Boolean(props.elder) && !props.elder?.device_mac);
 const isPending = computed(() => props.device?.device_status === "pending");
+const isOffline = computed(() => props.device?.device_status === "offline");
 const isAwaitingRealtime = computed(() => !!props.awaitingRealtime && props.device?.ingest_mode === "serial");
+const structuredSummary = computed(() => props.device?.structured_health ?? props.elder?.structured_health ?? null);
+const structuredTags = computed(() => structuredSummary.value?.abnormal_tags ?? []);
 const currentSample = computed(() => props.currentSample ?? props.samples[props.samples.length - 1] ?? null);
+const hasObservedRealtime = computed(() =>
+  Boolean(
+    currentSample.value
+      || hasSamples.value
+      || props.device?.latest_timestamp
+      || hasNumericValue(props.device?.heart_rate)
+      || hasNumericValue(props.device?.blood_oxygen)
+      || hasNumericValue(props.device?.temperature)
+      || hasNumericValue(props.device?.steps)
+      || props.device?.blood_pressure,
+  ),
+);
+const showPendingPlaceholder = computed(() => isPending.value && !hasObservedRealtime.value);
 const currentPressure = computed(() => parseBloodPressure(currentSample.value?.blood_pressure));
 const showPointSymbols = computed(() => props.samples.length <= 2);
+
 const chartSeries = computed(() => {
   const labels = props.samples.map((sample) =>
     new Date(sample.timestamp).toLocaleTimeString("zh-CN", {
@@ -114,42 +137,100 @@ const metricCards = computed(() => [
   },
 ]);
 
-const structuredSummary = computed(() => props.device?.structured_health ?? null);
-const structuredTags = computed(() => structuredSummary.value?.abnormal_tags ?? []);
-const deviceMeta = computed(() => {
-  if (!props.device) {
+const scoreText = computed(() => structuredSummary.value?.health_score?.toFixed(1) ?? props.device?.latest_health_score ?? "--");
+
+const panelMeta = computed(() => {
+  if (!props.elder) {
     return {
-      title: "请选择一个设备",
-      subtitle: "从设备轨道中选择一个设备后，这里会显示实时四参数变化。",
-      badge: "未选择设备",
+      title: "请选择老人",
+      subtitle: "先从上方老人卡片中选中一位监护对象，再查看设备绑定状态和实时数据。",
+      badge: "未选择",
     };
   }
 
-  if (props.device.device_status === "pending") {
+  if (isNoDevice.value) {
     return {
-      title: props.device.elder_name ? `${props.device.elder_name} / ${props.device.device_name}` : `${props.device.device_name} / 未归属`,
-      subtitle: props.device.elder_name
-        ? "设备已注册，等待串口采集器收到首个 T10 实时包。"
-        : "设备已登记到台账，当前暂未绑定成员，等待串口采集器收到首个 T10 实时包。",
-      badge: "待激活",
+      title: props.elder.elder_name,
+      subtitle: `${props.elder.apartment} · 当前无设备，需要先在移动端为这位老人绑定手环。`,
+      badge: "无设备",
+    };
+  }
+
+  if (isOffline.value) {
+    return {
+      title: props.elder.elder_name,
+      subtitle: `${props.device?.device_name ?? "T10-WATCH"} · ${props.elder.device_mac} · 设备当前离线，暂时没有新的实时曲线。`,
+      badge: "离线",
+    };
+  }
+
+  if (showPendingPlaceholder.value) {
+    return {
+      title: props.elder.elder_name,
+      subtitle: `${props.device?.device_name ?? "T10-WATCH"} · ${props.elder.device_mac} · 已绑定，等待首个实时包进入。`,
+      badge: "待同步",
     };
   }
 
   if (isAwaitingRealtime.value) {
     return {
-      title: props.device.elder_name ? `${props.device.elder_name} / ${props.device.device_name}` : `${props.device.device_name} / 未归属`,
-      subtitle: `${props.device.device_mac} · 正在切换采集目标，等待新的实时串口数据`,
+      title: props.elder.elder_name,
+      subtitle: `${props.device?.device_name ?? "T10-WATCH"} · ${props.elder.device_mac} · 正在切换采集目标，等待新的串口样本。`,
       badge: "接入中",
     };
   }
 
   return {
-    title: props.device.elder_name ? `${props.device.elder_name} / ${props.device.device_name}` : `${props.device.device_name} / 未归属`,
-    subtitle: props.device.elder_name
-      ? `${props.device.device_mac} · ${props.device.apartment ?? "未分配房间"} · ${props.device.device_status}`
-      : `${props.device.device_mac} · 当前暂未绑定成员 · ${props.device.device_status}`,
-    badge: riskLevelToChinese(structuredSummary.value?.risk_level ?? props.device.risk_level),
+    title: props.elder.elder_name,
+    subtitle: `${props.device?.device_name ?? "T10-WATCH"} · ${props.elder.device_mac} · ${props.elder.apartment}`,
+    badge: riskLevelToChinese(structuredSummary.value?.risk_level ?? props.elder.risk_level),
   };
+});
+
+const fallbackTag = computed(() => {
+  if (isNoDevice.value) return "当前无设备";
+  if (isOffline.value) return "设备离线";
+  if (showPendingPlaceholder.value) return "等待首包";
+  if (isAwaitingRealtime.value) return "等待新串口样本";
+  return "当前没有持续异常标签";
+});
+
+const noteText = computed(() => {
+  if (structuredSummary.value?.trigger_reasons?.[0]) {
+    return structuredSummary.value.trigger_reasons[0];
+  }
+  if (isNoDevice.value) {
+    return "先在移动端为这位老人绑定手环，绑定完成后回到这里点击对应老人即可查看实时曲线。";
+  }
+  if (isOffline.value) {
+    return "这位老人已有设备，但当前处于离线状态，需要先恢复设备连接后才会继续更新。";
+  }
+  if (showPendingPlaceholder.value) {
+    return "设备已经绑定成功，等待采集链路收到首个实时包后，这里会自动切换成实时监护曲线。";
+  }
+  if (isAwaitingRealtime.value) {
+    return "当前正在切换采集目标，新的串口样本到达后，这里会立刻刷新。";
+  }
+  return "收到实时数据后会持续更新曲线，没有新数据时会保留上一条有效数据。";
+});
+
+const emptyTitle = computed(() => {
+  if (!props.elder) return "请选择老人";
+  if (isNoDevice.value) return "当前无设备";
+  if (isOffline.value) return "设备离线";
+  if (showPendingPlaceholder.value) return "等待实时数据";
+  if (isAwaitingRealtime.value) return "正在接入实时数据";
+  return "暂未收到实时数据";
+});
+
+const emptyDescription = computed(() => {
+  if (!props.elder) return "先从上方老人卡片中选择一位监护对象。";
+  if (isNoDevice.value) return "这位老人还没有绑定手环，所以这里不会显示实时曲线。";
+  if (isOffline.value) return "设备恢复在线后，这里会继续展示最新曲线。";
+  if (showPendingPlaceholder.value) return "已绑定设备，等待首个实时样本进入。";
+  if (isAwaitingRealtime.value) return "串口采集目标已经切换，新包到达后就会开始绘制。";
+  if (hasObservedRealtime.value) return "已有最近样本，等待更多数据点后就会继续拉出曲线。";
+  return "等待下一次采样进入。";
 });
 
 function buildChartOption(): RealtimeOption {
@@ -232,15 +313,6 @@ function buildChartOption(): RealtimeOption {
         data: chartSeries.value.heartRate,
         lineStyle: { width: 3, color: "#ff6b57" },
         areaStyle: { color: "rgba(255, 107, 87, 0.10)" },
-        markLine: {
-          silent: true,
-          symbol: "none",
-          lineStyle: { color: "rgba(255, 107, 87, 0.35)", type: "dashed", width: 1 },
-          data: [
-            { yAxis: 60, label: { formatter: "60", color: "#ff6b57", fontSize: 11 } },
-            { yAxis: 100, label: { formatter: "100", color: "#ff6b57", fontSize: 11 } },
-          ],
-        },
       },
       {
         name: "血氧",
@@ -254,14 +326,6 @@ function buildChartOption(): RealtimeOption {
         data: chartSeries.value.spo2,
         lineStyle: { width: 3, color: "#17bebb" },
         areaStyle: { color: "rgba(23, 190, 187, 0.10)" },
-        markLine: {
-          silent: true,
-          symbol: "none",
-          lineStyle: { color: "rgba(23, 190, 187, 0.35)", type: "dashed", width: 1 },
-          data: [
-            { yAxis: 95, label: { formatter: "95%", color: "#17bebb", fontSize: 11 } },
-          ],
-        },
       },
       {
         name: "收缩压",
@@ -339,15 +403,13 @@ onUnmounted(() => {
   <section class="panel realtime-monitor-panel">
     <div class="monitor-hero">
       <div>
-        <p class="section-eyebrow">Realtime Device Monitor</p>
-        <h2>{{ deviceMeta.title }}</h2>
-        <p class="monitor-subtitle">{{ deviceMeta.subtitle }}</p>
+        <p class="section-eyebrow">Realtime Care View</p>
+        <h2>{{ panelMeta.title }}</h2>
+        <p class="monitor-subtitle">{{ panelMeta.subtitle }}</p>
       </div>
       <div class="monitor-badges">
-        <span class="monitor-badge">{{ deviceMeta.badge }}</span>
-        <span class="monitor-badge subtle">
-          模型评分 {{ structuredSummary?.health_score?.toFixed(1) ?? device?.latest_health_score ?? "--" }}
-        </span>
+        <span class="monitor-badge">{{ panelMeta.badge }}</span>
+        <span class="monitor-badge subtle">模型评分 {{ scoreText }}</span>
       </div>
     </div>
 
@@ -361,35 +423,16 @@ onUnmounted(() => {
     <div class="monitor-context">
       <div class="monitor-chip-row">
         <span v-for="tag in structuredTags" :key="tag" class="signal-chip">{{ tag }}</span>
-        <span v-if="!structuredTags.length" class="signal-chip muted">
-          {{ isPending ? "等待首包激活" : isAwaitingRealtime ? "正在等待实时串口样本" : "当前没有持续异常标签" }}
-        </span>
+        <span v-if="!structuredTags.length" class="signal-chip muted">{{ fallbackTag }}</span>
       </div>
-      <p class="monitor-note">
-        {{
-          structuredSummary?.trigger_reasons?.[0]
-            ?? (isPending
-              ? "已注册，等待串口采集器收到首个 T10 实时包后自动开始监护。"
-              : isAwaitingRealtime
-                ? "当前已切换到这台真实设备，正在等待切换后的首个实时串口包。"
-                : "实时曲线默认启用窗口稳定化，短时轻微波动不会立即触发正式异常事件。")
-        }}
-      </p>
+      <p class="monitor-note">{{ noteText }}</p>
     </div>
 
     <div class="monitor-chart-shell">
       <div ref="chartRef" class="monitor-chart"></div>
       <div v-if="!hasSamples" class="monitor-empty">
-        <strong>{{ isPending ? "设备待激活" : isAwaitingRealtime ? "正在接入实时数据" : "暂未收到实时数据" }}</strong>
-        <p>
-          {{
-            isPending
-              ? "请确认采集器已连接并开始扫描，首个回应包到达后这里会自动切换为实时四参数曲线。"
-              : isAwaitingRealtime
-                ? "串口采集目标已切换，新的响应包到达后这里会立刻刷新。"
-                : "选择一个在线设备，或等待下一次采样进入。"
-          }}
-        </p>
+        <strong>{{ emptyTitle }}</strong>
+        <p>{{ emptyDescription }}</p>
       </div>
     </div>
   </section>
@@ -475,7 +518,6 @@ onUnmounted(() => {
 .metric-plate span {
   color: rgba(110, 168, 200, 0.95);
   font-size: 1.2rem;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
 }
@@ -520,9 +562,9 @@ onUnmounted(() => {
 .signal-chip {
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.10);
+  background: rgba(34, 211, 238, 0.1);
   color: #22d3ee;
-  border: 1px solid rgba(34, 211, 238, 0.20);
+  border: 1px solid rgba(34, 211, 238, 0.2);
   font-size: 0.92rem;
   font-weight: 600;
 }
@@ -588,8 +630,8 @@ onUnmounted(() => {
   }
 
   .monitor-chart {
-    height: 620px;
-    min-height: 620px;
+    min-height: 520px;
+    height: 70vh;
   }
 }
 </style>

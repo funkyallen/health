@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../repositories/agent_repository.dart';
 
 enum AgentStatus { initial, loading, streaming, loaded, error }
@@ -8,7 +9,7 @@ class AgentProvider extends ChangeNotifier {
 
   AgentStatus _status = AgentStatus.initial;
   String? _errorMessage;
-  final List<AgentMessage> _messages = [];
+  final List<AgentMessage> _messages = <AgentMessage>[];
 
   AgentProvider(this._repository);
 
@@ -16,51 +17,63 @@ class AgentProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<AgentMessage> get messages => _messages;
 
-  /// Setup initial chat greeting
   void init([String? initialGreeting]) {
     _messages.clear();
-    if (initialGreeting != null) {
-      _messages.add(AgentMessage(role: 'assistant', content: initialGreeting));
+    if (initialGreeting != null && initialGreeting.trim().isNotEmpty) {
+      _messages.add(
+        AgentMessage(role: 'assistant', content: initialGreeting.trim()),
+      );
     }
     _status = AgentStatus.loaded;
+    _errorMessage = null;
     notifyListeners();
   }
 
-  Future<void> sendMessage(String text, {String? deviceMac}) async {
-    if (text.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String text, {
+    String? deviceMac,
+    List<String> deviceMacs = const <String>[],
+    required String role,
+  }) async {
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) {
+      return;
+    }
 
-    // Add user message immediately for snappy UI
-    final userMsg = AgentMessage(role: 'user', content: text);
-    _messages.add(userMsg);
+    final userMessage = AgentMessage(role: 'user', content: normalizedText);
+    _messages.add(userMessage);
 
     _status = AgentStatus.loading;
     _errorMessage = null;
     notifyListeners();
 
-    // Add placeholder assistant message for streaming content
-    final assistantMsg = AgentMessage(role: 'assistant', content: '');
-    _messages.add(assistantMsg);
+    final assistantMessage = AgentMessage(role: 'assistant', content: '');
+    _messages.add(assistantMessage);
     notifyListeners();
 
     try {
       _status = AgentStatus.streaming;
       notifyListeners();
 
-      await for (final delta
-          in _repository.streamAgentAnalysis(text, deviceMac)) {
-        assistantMsg.content += delta;
-        // Notify on every delta for true streaming effect
+      await for (final delta in _repository.streamAgentAnalysis(
+        normalizedText,
+        deviceMac,
+        deviceMacs: deviceMacs,
+        role: role,
+      )) {
+        assistantMessage.content += delta;
         notifyListeners();
       }
 
       _status = AgentStatus.loaded;
-    } catch (e) {
-      _errorMessage = '无法连接到健康助手，请重试。';
+    } catch (_) {
+      _errorMessage = '暂时无法连接到健康助手，请稍后再试。';
       _status = AgentStatus.error;
-      if (assistantMsg.content.isEmpty) {
-        assistantMsg.content = '连接失败，请重试。';
+      if (assistantMessage.content.isEmpty) {
+        assistantMessage.content = '连接失败，请稍后重试。';
       }
     }
+
     notifyListeners();
   }
 }

@@ -26,8 +26,8 @@ class HealthData {
   factory HealthData.fromJson(Map<String, dynamic> json) {
     return HealthData(
       deviceMac: json['device_mac'] as String? ?? '',
-      timestamp: json['timestamp'] != null 
-          ? DateTime.parse(json['timestamp'] as String) 
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'] as String)
           : DateTime.now(),
       heartRate: (json['heart_rate'] as num?)?.toDouble(),
       temperature: (json['temperature'] as num?)?.toDouble(),
@@ -40,28 +40,45 @@ class HealthData {
     );
   }
 
-  // 用于合并 WebSocket 增量数据
-  HealthData copyWith({
-    double? heartRate,
-    double? temperature,
-    double? bloodOxygen,
-    String? bloodPressure,
-    int? battery,
-    bool? sosFlag,
-    int? steps,
-    int? healthScore,
-  }) {
+  HealthData mergeWith(HealthData incoming) {
     return HealthData(
-      deviceMac: deviceMac,
-      timestamp: DateTime.now(),
-      heartRate: heartRate ?? this.heartRate,
-      temperature: temperature ?? this.temperature,
-      bloodOxygen: bloodOxygen ?? this.bloodOxygen,
-      bloodPressure: bloodPressure ?? this.bloodPressure,
-      battery: battery ?? this.battery,
-      sosFlag: sosFlag ?? this.sosFlag,
-      steps: steps ?? this.steps,
-      healthScore: healthScore ?? this.healthScore,
+      deviceMac: incoming.deviceMac.isNotEmpty ? incoming.deviceMac : deviceMac,
+      timestamp: incoming.timestamp,
+      heartRate: _preferPositiveNumber(heartRate, incoming.heartRate),
+      temperature: _preferPositiveNumber(temperature, incoming.temperature),
+      bloodOxygen: _preferPositiveNumber(bloodOxygen, incoming.bloodOxygen),
+      bloodPressure:
+          _preferBloodPressure(bloodPressure, incoming.bloodPressure),
+      battery: _preferIncrementalInt(battery, incoming.battery),
+      sosFlag: incoming.sosFlag,
+      steps: _preferIncrementalInt(steps, incoming.steps),
+      healthScore: _preferIncrementalInt(healthScore, incoming.healthScore),
     );
+  }
+
+  static double? _preferPositiveNumber(double? previous, double? incoming) {
+    if (incoming != null && incoming > 0) return incoming;
+    return previous ?? incoming;
+  }
+
+  static int? _preferIncrementalInt(int? previous, int? incoming) {
+    if (incoming != null && incoming > 0) return incoming;
+    return previous ?? incoming;
+  }
+
+  static String? _preferBloodPressure(String? previous, String? incoming) {
+    return _normalizeBloodPressure(incoming) ??
+        _normalizeBloodPressure(previous);
+  }
+
+  static String? _normalizeBloodPressure(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final parts = value.split('/');
+    if (parts.length != 2) return null;
+    final systolic = int.tryParse(parts[0].trim());
+    final diastolic = int.tryParse(parts[1].trim());
+    if (systolic == null || diastolic == null) return null;
+    if (systolic <= 0 || diastolic <= 0) return null;
+    return '$systolic/$diastolic';
   }
 }

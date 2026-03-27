@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any, Iterator, TypedDict
@@ -571,19 +572,24 @@ class HealthAgentService:
                 if stage_key == "tools":
                     update = yield from self._stream_tool_node(state, stage=stage_key)
                 elif stage_key == "generate":
-                    answer = self._build_answer(state)
+                    full_answer = []
+                    for chunk in self._stream_build_answer(state):
+                        if not chunk:
+                            continue
+                        for fragment in self._iter_stream_fragments(chunk):
+                            if not fragment:
+                                continue
+                            full_answer.append(fragment)
+                            yield {
+                                "type": "answer.delta",
+                                "session_id": session_id,
+                                "delta": fragment,
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                            }
                     update = {
-                        "answer": answer,
+                        "answer": "".join(full_answer),
                         "selected_mode": str(state.get("selected_mode", "local")),
                     }
-                    for chunk in self._chunk_answer(answer):
-                        yield {
-                            "type": "answer.delta",
-                            "session_id": session_id,
-                            "delta": chunk,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                        }
-                        time.sleep(0.015)
                 else:
                     assert handler is not None
                     update = handler(state)
@@ -1176,11 +1182,13 @@ class HealthAgentService:
         scope = str(state.get("scope", "device"))
         question = str(state.get("question", "")).strip()
         if scope == "community":
-            payload = self._analysis.summarize_community_history(dict(state.get("community_samples", {})))
+            raw_payload = self._analysis.summarize_community_history(dict(state.get("community_samples", {})))
         else:
-            payload = self._analysis.summarize_device(list(state.get("samples", [])))
+            raw_payload = self._analysis.summarize_device(list(state.get("samples", [])))
 
-        context_bundle = dict(state.get("context_bundle", {}))
+        payload = self._sanitize_agent_content(raw_payload)
+
+        context_bundle = self._sanitize_agent_content(dict(state.get("context_bundle", {})))
         context_bundle["analysis_recommendations"] = payload.get("recommendations", []) if isinstance(payload, dict) else []
 
         return {
@@ -1189,6 +1197,63 @@ class HealthAgentService:
             "analysis_context": json.dumps(payload, ensure_ascii=False, indent=2, default=str),
             "retrieval_query": self._build_retrieval_query(scope=scope, question=question, analysis_payload=payload),
         }
+
+    def _sanitize_agent_content(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            sanitized: dict[str, Any] = {}
+            for key, item in value.items():
+                key_text = str(key)
+                if self._should_skip_agent_key(key_text):
+                    continue
+                cleaned = self._sanitize_agent_content(item)
+                if self._is_agent_empty(cleaned):
+                    continue
+                sanitized[key_text] = cleaned
+            return sanitized
+
+        if isinstance(value, list):
+            sanitized_items = [self._sanitize_agent_content(item) for item in value]
+            return [item for item in sanitized_items if not self._is_agent_empty(item)]
+
+        if isinstance(value, str):
+            return "" if self._mentions_temperature_topic(value) else value
+
+        return value
+
+    @staticmethod
+    def _should_skip_agent_key(key: str) -> bool:
+        normalized = key.strip().lower()
+        if not normalized:
+            return False
+        return normalized in {
+            "temperature",
+            "body_temp",
+            "current_temperature",
+            "temperature_delta",
+            "temperature_celsius",
+        } or "temperature" in normalized
+
+    @staticmethod
+    def _mentions_temperature_topic(text: str) -> bool:
+        raw = text.strip()
+        if not raw:
+            return False
+        lowered = raw.lower()
+        cn_markers = ("体温", "发热", "低温", "高温")
+        en_markers = ("temperature", "temp_warning", "temp_critical")
+        return any(marker in raw for marker in cn_markers) or any(
+            marker in lowered for marker in en_markers
+        )
+
+    @staticmethod
+    def _is_agent_empty(value: Any) -> bool:
+        if value is None:
+            return True
+        if isinstance(value, str):
+            return not value.strip()
+        if isinstance(value, (list, tuple, set, dict)):
+            return len(value) == 0
+        return False
 
     def _model_node(self, state: AgentState) -> AgentState:
         if self._model_suite is None:
@@ -1219,8 +1284,8 @@ class HealthAgentService:
                     "model_name": value.model_name,
                     "status": value.status,
                     "source": value.source,
-                    "summary": value.summary,
-                    "payload": value.payload,
+                    "summary": self._sanitize_agent_content(value.summary),
+                    "payload": self._sanitize_agent_content(value.payload),
                     "confidence": value.confidence,
                     "degraded_reason": value.degraded_reason,
                 }
@@ -1673,7 +1738,25 @@ class HealthAgentService:
         primary_event = event_layer.get("primary_event", {}) if isinstance(event_layer, dict) else {}
         actions = list(event_layer.get("action_labels", [])) if isinstance(event_layer, dict) else []
         if role == UserRole.FAMILY:
-            return "当前主要是社区侧的整体风险判断，如果你是家属，请优先关注与你家老人相关的设备提示。"
+            device_count = int(analysis_payload.get("device_count", len(priority_devices) or 0))
+            high_count = int(distribution.get("high", 0)) if isinstance(distribution, dict) else 0
+            medium_count = int(distribution.get("medium", 0)) if isinstance(distribution, dict) else 0
+            overview = (
+                f"当前选中的 {device_count} 台设备里，高风险 {high_count} 台，中风险 {medium_count} 台。"
+                if device_count
+                else "当前选中的设备还需要继续观察。"
+            )
+            focus_text = ""
+            if priority_devices:
+                first = priority_devices[0]
+                if isinstance(first, dict):
+                    focus_text = (
+                        f"最需要先关注的是设备 {first.get('device_mac', '')}，"
+                        f"原因是 {', '.join(str(item) for item in first.get('notable_events', [])[:1]) or str(primary_event.get('summary', '当前变化更明显'))}。"
+                    )
+            action = self._render_action_sentence(role, actions[0] if actions else "continue_observation")
+            next_action = self._render_action_sentence(role, actions[1] if len(actions) > 1 else "")
+            return " ".join(part for part in [overview, focus_text, action, next_action] if part).strip()
         if role == UserRole.ELDER:
             return "现在社区正在关注整体情况，如果你感觉不舒服，可以先请家人或社区工作人员帮你看看。"
 
@@ -1874,7 +1957,7 @@ class HealthAgentService:
             "selected_mode": str(state.get("selected_mode", "local")),
         }
 
-    def _build_answer(self, state: AgentState) -> str:
+    def _stream_build_answer(self, state: AgentState) -> Iterator[str]:
         prompt_text = str(state.get("prompt_text", "")).strip()
         system_prompt = str(state.get("system_prompt", "")).strip()
         user_prompt = str(state.get("user_prompt", "")).strip()
@@ -1885,9 +1968,12 @@ class HealthAgentService:
         dialogue_expression = dict(state.get("dialogue_expression", {}))
 
         if not prompt_text:
-            return str(dialogue_expression.get("answer", "")).strip() or self._fallback_answer(state.get("analysis_payload", {}), scope)
+            fallback = str(dialogue_expression.get("answer", "")).strip() or self._fallback_answer(state.get("analysis_payload", {}), scope)
+            yield from self._iter_stream_fragments(fallback)
+            return
 
-        llm_answer = self._invoke_local(
+        has_yielded = False
+        for chunk in self._stream_invoke_local(
             prompt_text,
             messages,
             selected_model=selected_model,
@@ -1895,14 +1981,204 @@ class HealthAgentService:
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             max_predict_tokens=self._settings.dialogue_max_predict_tokens,
-            max_output_chars=self._settings.dialogue_max_output_chars,
+        ):
+            if chunk:
+                has_yielded = True
+                yield chunk
+
+        if not has_yielded:
+            event_answer = str(dialogue_expression.get("answer", "")).strip()
+            fallback_text = event_answer if event_answer else self._fallback_answer(state.get("analysis_payload", {}), scope)
+            yield from self._iter_stream_fragments(fallback_text)
+
+    def _iter_stream_fragments(self, text: str) -> Iterator[str]:
+        normalized = str(text).strip()
+        if not normalized:
+            return
+
+        fragments = [
+            item
+            for item in re.split(r"(?<=[，。！？；：,.!?;\n])", normalized)
+            if item and item.strip()
+        ]
+        if not fragments:
+            fragments = [normalized]
+
+        for fragment in fragments:
+            current = fragment
+            while len(current) > 10:
+                split_at = 8
+                for separator in ("，", "。", "！", "？", "；", "：", ",", ".", "!", "?", ";", "\n", " "):
+                    candidate = current.rfind(separator, 0, 10)
+                    if candidate >= 3:
+                        split_at = candidate + 1
+                        break
+                piece = current[:split_at]
+                if piece.strip():
+                    yield piece
+                current = current[split_at:]
+            if current.strip():
+                yield current
+
+    def _stream_invoke_local(
+        self,
+        prompt_text: str,
+        messages: list[Any],
+        *,
+        selected_model: str,
+        selected_provider: str = "",
+        system_prompt: str = "",
+        user_prompt: str = "",
+        max_predict_tokens: int | None = None,
+    ) -> Iterator[str]:
+        provider = (selected_provider or self._settings.preferred_llm_provider).strip().lower()
+        local_fallback_model = self._settings.local_reasoning_model or self._settings.local_default_model
+
+        if provider == "qwen":
+            # Attempt Tongyi streaming if available
+            stream = self._stream_call_tongyi(
+                prompt_text,
+                messages,
+                selected_model=selected_model,
+                max_predict_tokens=max_predict_tokens,
+            )
+            if stream:
+                yield from stream
+                return
+
+        # Fallback to Ollama or compatible HTTP streaming
+        if ChatOllama is not None:
+            local_llm = self._build_local_llm(
+                local_fallback_model if provider == "qwen" else selected_model,
+                max_predict_tokens=max_predict_tokens,
+                streaming=True,
+            )
+            if local_llm is not None:
+                try:
+                    for chunk in local_llm.stream(messages or prompt_text):
+                        text = self._extract_message_text(chunk)
+                        if text:
+                            yield text
+                    return
+                except Exception:
+                    pass
+
+        # Final HTTP-based streaming fallback if needed (Ollama only for now)
+        yield from self._stream_call_ollama_http(
+            prompt_text,
+            selected_model=local_fallback_model if provider == "qwen" else selected_model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_predict_tokens=max_predict_tokens,
         )
-        if llm_answer:
-            return llm_answer
-        event_answer = str(dialogue_expression.get("answer", "")).strip()
-        if event_answer:
-            return event_answer
-        return self._fallback_answer(state.get("analysis_payload", {}), scope)
+
+    def _stream_call_tongyi(
+        self,
+        prompt_text: str,
+        messages: list[Any],
+        *,
+        selected_model: str,
+        max_predict_tokens: int | None = None,
+    ) -> Iterator[str] | None:
+        if ChatTongyi is None or not self._settings.qwen_llm_configured:
+            return None
+        cloud_llm = self._build_tongyi_llm(selected_model, max_predict_tokens=max_predict_tokens, streaming=True)
+        if cloud_llm is None:
+            return None
+        try:
+            for chunk in cloud_llm.stream(messages or prompt_text):
+                text = self._extract_message_text(chunk)
+                if text:
+                    yield text
+        except Exception:
+            return None
+
+    def _build_tongyi_llm(self, model_name: str, *, max_predict_tokens: int | None = None, streaming: bool = False):
+        if ChatTongyi is None or not self._settings.qwen_llm_configured:
+            return None
+        cache_key = f"tongyi|{model_name}|{max_predict_tokens or 'default'}|{streaming}"
+        if cache_key in self._local_llms:
+            return self._local_llms[cache_key]
+        try:
+            kwargs: dict[str, Any] = {
+                "model": model_name,
+                "api_key": self._settings.qwen_api_key,
+                "streaming": streaming,
+            }
+            if max_predict_tokens is not None:
+                kwargs["max_tokens"] = max_predict_tokens
+            llm = ChatTongyi(**kwargs)
+            self._local_llms[cache_key] = llm
+            return llm
+        except Exception:
+            return None
+
+    def _build_local_llm(self, model_name: str, *, max_predict_tokens: int | None = None, streaming: bool = False):
+        if ChatOllama is None:
+            return None
+        cache_key = f"{model_name}|{max_predict_tokens or 'default'}|{streaming}"
+        if cache_key in self._local_llms:
+            return self._local_llms[cache_key]
+        try:
+            kwargs: dict[str, Any] = {
+                "model": model_name,
+                "base_url": self._settings.ollama_base_url,
+                "temperature": 0.2,
+            }
+            if max_predict_tokens is not None:
+                kwargs["num_predict"] = max_predict_tokens
+            # Some ChatOllama versions might not support streaming flag in constructor but do in stream() method
+            llm = ChatOllama(**kwargs)
+            self._local_llms[cache_key] = llm
+            return llm
+        except Exception:
+            return None
+
+    def _stream_call_ollama_http(
+        self,
+        prompt_text: str,
+        *,
+        selected_model: str,
+        system_prompt: str = "",
+        user_prompt: str = "",
+        max_predict_tokens: int | None = None,
+    ) -> Iterator[str]:
+        url = f"{self._settings.ollama_base_url.rstrip('/')}/api/chat"
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        if user_prompt:
+            messages.append({"role": "user", "content": user_prompt})
+        if not messages:
+            messages.append({"role": "user", "content": prompt_text})
+        payload = json.dumps(
+            {
+                "model": selected_model,
+                "stream": True,
+                "messages": messages,
+                "options": {"num_predict": max_predict_tokens} if max_predict_tokens is not None else {},
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        
+        req = request.Request(url=url, data=payload, headers=headers, method="POST")
+        try:
+            with request.urlopen(req, timeout=self._settings.llm_timeout_seconds) as response:
+                for line in response:
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line.decode("utf-8"))
+                        content = chunk.get("message", {}).get("content")
+                        if content:
+                            yield content
+                        if chunk.get("done"):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+        except Exception:
+            pass
 
     def _aggregate_node(self, state: AgentState) -> AgentState:
         attachments = self._collect_attachments(list(state.get("tool_results", [])))
@@ -2070,46 +2346,6 @@ class HealthAgentService:
         try:
             response = cloud_llm.invoke(messages or prompt_text)
             return self._extract_message_text(response)
-        except Exception:
-            return None
-
-    def _build_tongyi_llm(self, model_name: str, *, max_predict_tokens: int | None = None):
-        if ChatTongyi is None or not self._settings.qwen_llm_configured:
-            return None
-        cache_key = f"tongyi|{model_name}|{max_predict_tokens or 'default'}"
-        if cache_key in self._local_llms:
-            return self._local_llms[cache_key]
-        try:
-            kwargs: dict[str, Any] = {
-                "model": model_name,
-                "api_key": self._settings.qwen_api_key,
-                "streaming": False,
-            }
-            if max_predict_tokens is not None:
-                kwargs["max_tokens"] = max_predict_tokens
-            llm = ChatTongyi(**kwargs)
-            self._local_llms[cache_key] = llm
-            return llm
-        except Exception:
-            return None
-
-    def _build_local_llm(self, model_name: str, *, max_predict_tokens: int | None = None):
-        if ChatOllama is None:
-            return None
-        cache_key = f"{model_name}|{max_predict_tokens or 'default'}"
-        if cache_key in self._local_llms:
-            return self._local_llms[cache_key]
-        try:
-            kwargs: dict[str, Any] = {
-                "model": model_name,
-                "base_url": self._settings.ollama_base_url,
-                "temperature": 0.2,
-            }
-            if max_predict_tokens is not None:
-                kwargs["num_predict"] = max_predict_tokens
-            llm = ChatOllama(**kwargs)
-            self._local_llms[cache_key] = llm
-            return llm
         except Exception:
             return None
 
@@ -2658,7 +2894,12 @@ class HealthAgentService:
     def _compose_analysis_context(self, state: AgentState) -> str:
         sections = [
             "### Analysis",
-            str(state.get("analysis_context", "{}")),
+            json.dumps(
+                self._sanitize_agent_content(state.get("analysis_payload", {})),
+                ensure_ascii=False,
+                indent=2,
+                default=str,
+            ),
         ]
         conversation_history = state.get("conversation_history", [])
         if conversation_history:
@@ -2673,7 +2914,12 @@ class HealthAgentService:
             sections.extend(
                 [
                     "### Health Events",
-                    json.dumps(dialogue_events, ensure_ascii=False, indent=2, default=str),
+                    json.dumps(
+                        self._sanitize_agent_content(dialogue_events),
+                        ensure_ascii=False,
+                        indent=2,
+                        default=str,
+                    ),
                 ]
             )
         dialogue_action_labels = state.get("dialogue_action_labels", [])
@@ -2681,7 +2927,12 @@ class HealthAgentService:
             sections.extend(
                 [
                     "### Action Labels",
-                    json.dumps(dialogue_action_labels, ensure_ascii=False, indent=2, default=str),
+                    json.dumps(
+                        self._sanitize_agent_content(dialogue_action_labels),
+                        ensure_ascii=False,
+                        indent=2,
+                        default=str,
+                    ),
                 ]
             )
         context_bundle = state.get("context_bundle", {})
@@ -2689,7 +2940,12 @@ class HealthAgentService:
             sections.extend(
                 [
                     "### Business Context",
-                    json.dumps(context_bundle, ensure_ascii=False, indent=2, default=str),
+                    json.dumps(
+                        self._sanitize_agent_content(context_bundle),
+                        ensure_ascii=False,
+                        indent=2,
+                        default=str,
+                    ),
                 ]
             )
         tool_results = state.get("tool_results", [])
@@ -2697,7 +2953,12 @@ class HealthAgentService:
             sections.extend(
                 [
                     "### Tool Results",
-                    json.dumps(tool_results, ensure_ascii=False, indent=2, default=str),
+                    json.dumps(
+                        self._sanitize_agent_content(tool_results),
+                        ensure_ascii=False,
+                        indent=2,
+                        default=str,
+                    ),
                 ]
             )
         model_results = state.get("model_results", {})
@@ -2705,7 +2966,12 @@ class HealthAgentService:
             sections.extend(
                 [
                     "### Model Results",
-                    json.dumps(model_results, ensure_ascii=False, indent=2, default=str),
+                    json.dumps(
+                        self._sanitize_agent_content(model_results),
+                        ensure_ascii=False,
+                        indent=2,
+                        default=str,
+                    ),
                 ]
             )
         degraded_notes = state.get("degraded_notes", [])
@@ -2893,7 +3159,6 @@ class HealthAgentService:
             f"当前综合风险等级为{risk_level}。"
             f"最近监测窗口约 {window.get('duration_minutes', 0)} 分钟，"
             f"最新指标为心率 {latest.get('heart_rate', '--')} bpm、"
-            f"体温 {latest.get('temperature', '--')}℃、"
             f"血氧 {latest.get('blood_oxygen', '--')}%、"
             f"血压 {latest.get('blood_pressure', '--')}。"
             f"重点情况：{notable_events[0] if notable_events else '暂无明显异常事件。'}"

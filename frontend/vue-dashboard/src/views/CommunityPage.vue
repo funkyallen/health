@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from "vue";
+import { computed, toRef } from "vue";
+
 import type { SessionUser } from "../api/client";
 import CommunityDeviceInspector from "../components/CommunityDeviceInspector.vue";
 import CommunityDeviceRail from "../components/CommunityDeviceRail.vue";
@@ -19,26 +20,21 @@ const syncLabel = computed(() =>
     : "尚未同步",
 );
 
+const noDeviceCount = computed(() =>
+  workspace.topRiskElders.value.filter((item) => !item.device_mac || item.device_status === "no_device").length,
+);
+
+const offlineCount = computed(() =>
+  workspace.topRiskElders.value.filter((item) => item.device_status === "offline").length,
+);
+
 const pageMeta = computed(() => [
   `社区 ${workspace.community.value?.name ?? "未分配"}`,
-  `待激活 ${workspace.metrics.value?.device_pending ?? 0}`,
-  `在线设备 ${workspace.metrics.value?.device_online ?? 0}`,
+  `无设备 ${noDeviceCount.value}`,
+  `离线 ${offlineCount.value}`,
   `未确认告警 ${workspace.metrics.value?.unacknowledged_alarm_count ?? 0}`,
   `同步 ${syncLabel.value}`,
 ]);
-
-// SOS 弹窗：监听新 SOS 报警推入队列，用浏览器原生 alert 保证不遗漏
-watch(
-  () => workspace.sosAlarmQueue.value.length,
-  (len, prevLen) => {
-    if (len <= prevLen) return;
-    const sos = workspace.sosAlarmQueue.value[len - 1];
-    if (!sos) return;
-    const time = new Date(sos.created_at).toLocaleString("zh-CN", { hour12: false });
-    window.alert(`🚨 SOS 紧急报警\n设备: ${sos.device_mac}\n时间: ${time}\n消息: ${sos.message}\n\n请立即联系或前往处理！`);
-    workspace.dismissSosAlarm(sos.id);
-  },
-);
 </script>
 
 <template>
@@ -46,11 +42,13 @@ watch(
     <PageHeader
       eyebrow="Overview"
       title="总览监护"
-      description="围绕当前选中设备展开实时监护。新注册的 T10 手环会先显示为待激活，收到首个串口实时包后自动进入在线监护。"
+      description="社区页按老人对象展开监护。无设备时只显示绑定状态；只有完成绑定并点进对应老人后，才会显示实时曲线和详细指标。"
       :meta="pageMeta"
     >
       <template #actions>
-        <button type="button" class="ghost-btn" @click="workspace.refreshDashboardData">刷新数据</button>
+        <button type="button" class="ghost-btn" @click="workspace.refreshDashboardData">
+          刷新数据
+        </button>
       </template>
     </PageHeader>
 
@@ -60,12 +58,13 @@ watch(
 
     <div v-else class="overview-stage">
       <CommunityDeviceRail
-        :devices="workspace.deviceStatuses.value"
-        :selected-device-mac="workspace.selectedDeviceMac.value"
-        @select="workspace.setSelectedDeviceMac"
+        :elders="workspace.topRiskElders.value"
+        :selected-elder-id="workspace.selectedElderId.value"
+        @select="workspace.setSelectedElderId"
       />
 
       <CommunityRealtimeVitalsPanel
+        :elder="workspace.selectedElder.value"
         :device="workspace.selectedDevice.value"
         :current-sample="workspace.selectedMonitorCurrentSample.value"
         :samples="workspace.selectedMonitorSamples.value"
@@ -73,7 +72,10 @@ watch(
       />
 
       <div class="overview-stage__detail-row">
-        <CommunityDeviceInspector :device="workspace.selectedDevice.value" />
+        <CommunityDeviceInspector
+          :elder="workspace.selectedElder.value"
+          :device="workspace.selectedDevice.value"
+        />
 
         <article class="panel alerts-panel">
           <div class="alerts-panel__head">
@@ -94,7 +96,9 @@ watch(
               <small>{{ item.message }}</small>
               <em>{{ new Date(item.created_at).toLocaleString("zh-CN", { hour12: false }) }}</em>
             </article>
-            <div v-if="!workspace.recentAlerts.value.length" class="empty-copy">当前没有最近告警。</div>
+            <div v-if="!workspace.recentAlerts.value.length" class="empty-copy">
+              当前没有最近告警。
+            </div>
           </div>
         </article>
       </div>
@@ -147,7 +151,7 @@ watch(
   padding: 14px 16px;
   border-radius: 20px;
   background: rgba(12, 20, 34, 0.88);
-  border: 1px solid rgba(56, 189, 248, 0.10);
+  border: 1px solid rgba(56, 189, 248, 0.1);
   display: grid;
   gap: 6px;
 }

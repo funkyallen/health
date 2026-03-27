@@ -1,67 +1,74 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import type { CommunityDashboardDeviceItem } from "../api/client";
+import type { CommunityDashboardElderItem } from "../api/client";
 import { riskLevelToChinese } from "../utils/riskLevel";
 
 const props = defineProps<{
-  devices: CommunityDashboardDeviceItem[];
-  selectedDeviceMac: string;
+  elders: CommunityDashboardElderItem[];
+  selectedElderId: string;
 }>();
 
 const emit = defineEmits<{
-  select: [mac: string];
+  select: [elderId: string];
 }>();
 
-type DeviceTone = "sos" | "pending" | "risk-high" | "risk-medium" | "risk-low";
+type CardTone = "sos" | "no-device" | "offline" | "pending" | "risk-high" | "risk-medium" | "risk-low";
 
 const railGridRef = ref<HTMLElement | null>(null);
 
-function deviceTone(device: CommunityDashboardDeviceItem): DeviceTone {
-  if (device.sos_active) return "sos";
-  if (device.device_status === "pending") return "pending";
-  if (device.structured_health?.risk_level === "critical" || device.risk_level === "high") return "risk-high";
-  if (
-    device.structured_health?.risk_level === "warning"
-    || device.structured_health?.risk_level === "attention"
-    || device.risk_level === "medium"
-  ) {
-    return "risk-medium";
-  }
+function elderHasObservedRealtime(elder: CommunityDashboardElderItem) {
+  return Boolean(
+    elder.latest_timestamp
+      || elder.heart_rate != null
+      || elder.blood_oxygen != null
+      || elder.blood_pressure
+      || elder.temperature != null
+      || elder.latest_health_score != null,
+  );
+}
+
+function elderTone(elder: CommunityDashboardElderItem): CardTone {
+  if (elder.active_alarm_count > 0) return "sos";
+  if (!elder.device_mac || elder.device_status === "no_device") return "no-device";
+  if (elder.device_status === "offline") return "offline";
+  if (elder.device_status === "pending" && !elderHasObservedRealtime(elder)) return "pending";
+  if (elder.risk_level === "high") return "risk-high";
+  if (elder.risk_level === "medium") return "risk-medium";
   return "risk-low";
 }
 
-function deviceLabel(device: CommunityDashboardDeviceItem): string {
-  if (device.sos_active) return "SOS";
-  if (device.device_status === "pending") return "待激活";
-  if (device.device_status === "warning") return "告警中";
-  if (device.device_status === "offline") return "离线";
+function elderLabel(elder: CommunityDashboardElderItem): string {
+  if (elder.active_alarm_count > 0) return "告警中";
+  if (!elder.device_mac || elder.device_status === "no_device") return "无设备";
+  if (elder.device_status === "offline") return "离线";
+  if (elder.device_status === "pending" && !elderHasObservedRealtime(elder)) return "待同步";
   return "在线";
 }
 
-function deviceTitle(device: CommunityDashboardDeviceItem): string {
-  return device.elder_name ? `${device.elder_name} / ${device.device_name}` : `${device.device_name} / 未归属`;
-}
-
-function deviceMeta(device: CommunityDashboardDeviceItem): string {
-  if (device.sos_active) {
-    return `紧急求助 · ${device.active_sos_trigger === "long_press" ? "长按求助" : "双击求助"}`;
+function elderMeta(elder: CommunityDashboardElderItem): string {
+  if (!elder.device_mac || elder.device_status === "no_device") {
+    return `${elder.apartment} · 等待移动端绑定手环`;
   }
-  if (device.activation_state === "pending") return "等待首包";
-  const risk = riskLevelToChinese(device.structured_health?.risk_level ?? device.risk_level);
-  if (device.elder_name) return `风险 ${risk}`;
-  return `未归属设备 · ${risk}`;
+  if (elder.device_status === "offline") {
+    return `${elder.apartment} · 设备暂时离线`;
+  }
+  if (elder.device_status === "pending" && !elderHasObservedRealtime(elder)) {
+    return `${elder.apartment} · 已绑定，等待首包`;
+  }
+  return `${elder.apartment} · 风险 ${riskLevelToChinese(elder.structured_health?.risk_level ?? elder.risk_level)}`;
 }
 
-const pendingCount = computed(() => props.devices.filter((device) => device.device_status === "pending").length);
+const noDeviceCount = computed(() => props.elders.filter((elder) => !elder.device_mac || elder.device_status === "no_device").length);
+const offlineCount = computed(() => props.elders.filter((elder) => elder.device_status === "offline").length);
 
 async function scrollSelectedIntoView() {
-  if (!props.selectedDeviceMac) return;
+  if (!props.selectedElderId) return;
   await nextTick();
-  const target = railGridRef.value?.querySelector<HTMLElement>(`[data-device-mac="${props.selectedDeviceMac}"]`);
+  const target = railGridRef.value?.querySelector<HTMLElement>(`[data-elder-id="${props.selectedElderId}"]`);
   target?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
 }
 
-watch(() => props.selectedDeviceMac, () => {
+watch(() => props.selectedElderId, () => {
   void scrollSelectedIntoView();
 });
 
@@ -74,35 +81,34 @@ onMounted(() => {
   <section class="device-rail">
     <div class="device-rail__head">
       <div>
-        <p class="section-eyebrow">Device Rail</p>
-        <h2>设备轨道</h2>
+        <p class="section-eyebrow">Community Subjects</p>
+        <h2>老人监护对象</h2>
       </div>
-      <small>已注册设备会先进入轨道，收到首个实时包后自动切换到在线监护。</small>
+      <small>先按老人查看绑定状态；只有已绑定设备的老人，点进去后才会加载实时曲线和监护数据。</small>
     </div>
 
     <div class="device-rail__meta">
-      <span class="summary-badge">当前设备 {{ devices.length }}</span>
-      <span class="summary-badge">待激活 {{ pendingCount }}</span>
+      <span class="summary-badge">老人 {{ elders.length }}</span>
+      <span class="summary-badge">无设备 {{ noDeviceCount }}</span>
+      <span class="summary-badge">离线 {{ offlineCount }}</span>
     </div>
 
     <div ref="railGridRef" class="device-rail__grid">
       <button
-        v-for="device in devices"
-        :key="device.device_mac"
+        v-for="elder in elders"
+        :key="elder.elder_id"
         type="button"
         class="device-pill"
-        :data-device-mac="device.device_mac"
-        :class="[deviceTone(device), { 'device-pill--active': selectedDeviceMac === device.device_mac }]"
-        @click="emit('select', device.device_mac)"
+        :data-elder-id="elder.elder_id"
+        :class="[elderTone(elder), { 'device-pill--active': selectedElderId === elder.elder_id }]"
+        @click="emit('select', elder.elder_id)"
       >
         <div class="device-pill__top">
-          <strong>{{ deviceTitle(device) }}</strong>
-          <span class="device-pill__state">{{ deviceLabel(device) }}</span>
+          <strong>{{ elder.elder_name }}</strong>
+          <span class="device-pill__state">{{ elderLabel(elder) }}</span>
         </div>
-        <small>{{ device.device_mac }}</small>
-        <span class="device-pill__meta">
-          {{ deviceMeta(device) }}
-        </span>
+        <small>{{ elder.device_mac ?? "未绑定手环" }}</small>
+        <span class="device-pill__meta">{{ elderMeta(elder) }}</span>
       </button>
     </div>
   </section>
@@ -143,7 +149,7 @@ onMounted(() => {
 .device-rail__grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
 .device-pill {
@@ -165,7 +171,7 @@ onMounted(() => {
 }
 
 .device-pill--active {
-  border-color: rgba(34, 211, 238, 0.40);
+  border-color: rgba(34, 211, 238, 0.4);
   background: rgba(18, 28, 52, 0.98);
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.14), 0 14px 28px rgba(0, 0, 0, 0.28);
 }
@@ -179,7 +185,7 @@ onMounted(() => {
 
 .device-pill strong {
   color: #c8e0f4;
-  font-size: 0.96rem;
+  font-size: 1rem;
 }
 
 .device-pill__state {
@@ -188,6 +194,26 @@ onMounted(() => {
   font-size: 0.76rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.no-device {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(14, 19, 32, 0.96);
+}
+
+.no-device .device-pill__state {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+.offline {
+  border-color: rgba(96, 165, 250, 0.24);
+  background: rgba(9, 18, 34, 0.96);
+}
+
+.offline .device-pill__state {
+  background: rgba(96, 165, 250, 0.14);
+  color: #60a5fa;
 }
 
 .pending {
@@ -201,7 +227,7 @@ onMounted(() => {
 }
 
 .sos {
-  border-color: rgba(248, 113, 122, 0.50);
+  border-color: rgba(248, 113, 122, 0.5);
   background: rgba(28, 10, 12, 0.98);
   box-shadow: 0 0 0 1px rgba(248, 113, 122, 0.14), 0 12px 28px rgba(0, 0, 0, 0.36);
 }

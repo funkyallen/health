@@ -143,10 +143,11 @@ _last_community_alarm_at: datetime | None = None
 # serial/mqtt 模式下 mock 设备以 ingest_mode=mock 标记，与真实串口设备区分
 # mock 设备直接设为 ONLINE，overlay 流会持续推数据，不依赖串口
 _mock_devices_to_seed = _data_generator.build_devices()
-for _mock_dev in _mock_devices_to_seed:
+for _mock_index, _mock_dev in enumerate(_mock_devices_to_seed):
     if _device_service.get_device(_mock_dev.mac_address) is None:
         _device_service.seed_devices([_mock_dev])
-    _device_service.update_status(_mock_dev.mac_address, DeviceStatus.ONLINE)
+    seeded_status = DeviceStatus.OFFLINE if _mock_index % 5 == 0 else DeviceStatus.ONLINE
+    _device_service.update_status(_mock_dev.mac_address, seeded_status)
 _intelligent_scorer.warmup(_data_generator.build_training_sequences(hours=24, step_minutes=10))
 
 if _settings.data_mode == "mock" and _settings.use_mock_data:
@@ -197,12 +198,16 @@ _demo_overlay_last_refresh_at: datetime | None = None
 
 def _eligible_demo_overlay_device_macs() -> list[str]:
     devices = _device_service.list_devices()
-    known_devices = {device.mac_address for device in devices}
+    eligible_device_macs = {
+        device.mac_address
+        for device in devices
+        if device.status != DeviceStatus.OFFLINE
+    }
     personas = getattr(_data_generator, "personas", None) or []
     eligible: list[str] = []
     for persona in personas:
         mac = str(getattr(persona, "mac_address", "")).strip().upper()
-        if mac and mac in known_devices:
+        if mac and mac in eligible_device_macs:
             eligible.append(mac)
     return eligible
 
@@ -982,12 +987,23 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         raise RuntimeError("Device must be registered before ingest in formal mode")
 
     _device_service.update_status(sample.device_mac, DeviceStatus.ONLINE)
-    sample = _merge_with_latest(sample)
+    
+    # SOS 广播包是"告警信号包"，不是完整生命体征包。
+    # 直接评估 SOS，不做 _merge_with_latest 和 is_display_ready_sample 过滤。
+    is_sos_signal = sample.sos_flag and sample.packet_type == "broadcast"
+    
+    if not is_sos_signal:
+        sample = _merge_with_latest(sample)
 
     alarms = []
 
     baseline = _baseline_tracker.observe(sample)
     sample.health_score = _health_score_service.score(sample, baseline)
+    _health_data_repository.persist_sample(sample)
+    _health_data_repository.refresh_rollups_for_sample(
+        device_mac=sample.device_mac,
+        timestamp=sample.timestamp,
+    )
     _stream_service.publish(sample)
     alarms = _alarm_service.evaluate(sample)
 
@@ -1012,6 +1028,9 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
             alarms.extend(_alarm_service.evaluate_alarm_records([community_alarm]))
             _last_community_alarm_at = now
 
+    if alarms:
+        _health_data_repository.persist_alerts(alarms)
+
     await _websocket_manager.broadcast_health(sample.device_mac, sample.model_dump(mode="json"))
 
     for alarm in alarms:
@@ -1026,5 +1045,3 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         )
 
     return IngestResponse(sample=sample, triggered_alarm_ids=[alarm.id for alarm in alarms])
-
-

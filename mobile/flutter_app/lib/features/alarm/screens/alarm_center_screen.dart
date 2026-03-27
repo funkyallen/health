@@ -19,7 +19,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AlarmProvider>().init();
+      context.read<AlarmProvider>().ensureStarted();
     });
   }
 
@@ -96,11 +96,13 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
   }
 
   Widget _buildAlarmCard(AlarmRecord alarm, AlarmProvider provider) {
-    final isSOS = alarm.alarmType.toLowerCase().contains('sos');
-    final isCritical = alarm.alarmLevel.toLowerCase() == 'critical';
+    final isSOS = alarm.isSos;
+    final isCritical = alarm.isCritical;
 
     return Card(
-      color: (isSOS || isCritical) ? Colors.redAccent.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+      color: (isSOS || isCritical)
+          ? Colors.redAccent.withValues(alpha: 0.1)
+          : Colors.white.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -126,7 +128,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
                   ),
                 ),
                 Text(
-                  alarm.createdAt.split('T').first,
+                  alarm.createdDateDisplay,
                   style: const TextStyle(color: Colors.white24, fontSize: 10),
                 ),
               ],
@@ -207,14 +209,22 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
       itemBuilder: (context, index) {
         final push = pushes[index];
         return Card(
-          color: Colors.white.withOpacity(0.02),
+          color: Colors.white.withValues(alpha: 0.02),
           child: ListTile(
             title: Text(push.title, style: const TextStyle(color: Colors.white, fontSize: 14)),
             subtitle: Text(push.body, style: const TextStyle(color: Colors.white30, fontSize: 12)),
-            trailing: Text(push.createdAt.split('T').first, style: const TextStyle(color: Colors.white10, fontSize: 10)),
+            trailing: Text(_formatPushDate(push.createdAt), style: const TextStyle(color: Colors.white10, fontSize: 10)),
           ),
         );
       },
     );
+  }
+
+  String _formatPushDate(String raw) {
+    final parsed = DateTime.tryParse(raw)?.toLocal();
+    if (parsed == null) {
+      return raw.split('T').first;
+    }
+    return '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
   }
 }

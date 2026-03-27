@@ -113,26 +113,58 @@ class _VoiceScreenState extends State<VoiceScreen> {
         const SizedBox(height: 16),
         Center(
           child: GestureDetector(
-            onLongPress: () {
-              // MVP 模拟：长按发送一段假录音
-              provider.processAsr("MOCK_AUDIO_BASE64_DATA");
-            },
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: provider.isProcessing ? const Color(0xFFFF875A) : Colors.white10,
-              child: Icon(
-                provider.isProcessing ? Icons.graphic_eq : Icons.mic,
-                color: provider.isProcessing ? const Color(0xFF08161B) : Colors.white70,
-                size: 32,
-              ),
+            onLongPressStart: (_) => provider.startRecording(),
+            onLongPressEnd: (_) => provider.stopRecording(),
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (provider.isRecording)
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 1.0, end: 1.4),
+                        duration: const Duration(milliseconds: 600),
+                        builder: (context, value, child) {
+                          return Container(
+                            width: 80 * value,
+                            height: 80 * value,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFFF875A).withOpacity(0.2 * (1.6 - value)),
+                            ),
+                          );
+                        },
+                      ),
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: provider.isRecording || provider.isProcessing
+                          ? const Color(0xFFFF875A)
+                          : Colors.white10,
+                      child: Icon(
+                        provider.isProcessing
+                            ? Icons.graphic_eq
+                            : (provider.isRecording ? Icons.mic : Icons.mic_none),
+                        color: provider.isRecording || provider.isProcessing
+                            ? const Color(0xFF08161B)
+                            : Colors.white70,
+                        size: 32,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  provider.isRecording
+                      ? '松开 结束录音'
+                      : (provider.isProcessing ? '正在识别...' : '长按 开始录音'),
+                  style: TextStyle(
+                    color: provider.isRecording ? const Color(0xFFFF875A) : Colors.white24,
+                    fontSize: 12,
+                    fontWeight: provider.isRecording ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: Text(
-            provider.isProcessing ? '正在识别...' : '长按模拟录音',
-            style: const TextStyle(color: Colors.white24, fontSize: 12),
           ),
         ),
         if (provider.lastAsrText.isNotEmpty)

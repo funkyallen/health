@@ -38,7 +38,7 @@ from backend.models.care_model import (
     StructuredHealthInsight,
 )
 from backend.models.alarm_model import AlarmRecord, AlarmType
-from backend.models.device_model import DeviceRecord
+from backend.models.device_model import DeviceBindStatus, DeviceRecord, DeviceStatus
 from backend.models.user_model import UserRole
 
 
@@ -59,6 +59,26 @@ def _require_community_viewer(authorization: str | None) -> SessionUser:
     return user
 
 
+def _demo_elder_device_macs(elder) -> set[str]:
+    return {
+        str(mac).strip().upper()
+        for mac in (getattr(elder, "device_macs", None) or ([getattr(elder, "device_mac", "")] if getattr(elder, "device_mac", "") else []))
+        if str(mac).strip()
+    }
+
+
+def _demo_accessible_devices_for_elders(elders: list[object], devices: list[DeviceRecord]) -> list[DeviceRecord]:
+    elder_ids = {str(getattr(elder, "id", "")).strip() for elder in elders if getattr(elder, "id", None)}
+    elder_device_macs = set().union(*(_demo_elder_device_macs(elder) for elder in elders)) if elders else set()
+    accessible: list[DeviceRecord] = []
+    for device in devices:
+        is_demo_mock = device.mac_address in elder_device_macs and device.ingest_mode.value == "mock"
+        is_real_bound = device.user_id in elder_ids and device.bind_status == DeviceBindStatus.BOUND
+        if is_demo_mock or is_real_bound:
+            accessible.append(device)
+    return accessible
+
+
 def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord]]:
     device_service = get_device_service()
     relation_service = get_relation_service()
@@ -66,7 +86,11 @@ def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord
     devices = device_service.list_devices()
 
     if user.role == UserRole.ELDER:
-        bound_devices = [device for device in devices if device.user_id == user.id]
+        bound_devices = [
+            device
+            for device in devices
+            if device.user_id == user.id and device.bind_status == DeviceBindStatus.BOUND
+        ]
         if bound_devices:
             return [user.id], bound_devices
 
@@ -75,8 +99,7 @@ def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord
         if demo_elder is None:
             return [user.id], []
 
-        demo_device_macs = demo_elder.device_macs or ([demo_elder.device_mac] if demo_elder.device_mac else [])
-        demo_devices = [device for device in devices if device.mac_address in demo_device_macs]
+        demo_devices = _demo_accessible_devices_for_elders([demo_elder], devices)
         return [demo_elder.id], demo_devices
 
     if user.role == UserRole.FAMILY:
@@ -85,7 +108,11 @@ def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord
             for relation in relation_service.list_relations_by_family(user.id)
             if relation.status == "active"
         ]
-        bound_devices = [device for device in devices if device.user_id in elder_ids]
+        bound_devices = [
+            device
+            for device in devices
+            if device.user_id in elder_ids and device.bind_status == DeviceBindStatus.BOUND
+        ]
         if elder_ids or bound_devices:
             return elder_ids, bound_devices
 
@@ -95,15 +122,10 @@ def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord
         if demo_family is None:
             return [], []
 
-        demo_elders_by_id = {elder.id: elder for elder in demo_directory.elders}
-        demo_device_macs: set[str] = set()
-        for elder_id in demo_family.elder_ids:
-            elder = demo_elders_by_id.get(elder_id)
-            if elder is None:
-                continue
-            demo_device_macs.update(elder.device_macs or ([elder.device_mac] if elder.device_mac else []))
-        demo_devices = [device for device in devices if device.mac_address in demo_device_macs]
-        return list(demo_family.elder_ids), demo_devices
+        demo_elder_ids = list(demo_family.elder_ids)
+        demo_elders = [elder for elder in demo_directory.elders if elder.id in demo_elder_ids]
+        demo_devices = _demo_accessible_devices_for_elders(demo_elders, devices)
+        return demo_elder_ids, demo_devices
 
     return [], []
 
@@ -119,7 +141,6 @@ def _basic_advice(user: SessionUser, binding_state: str) -> str:
 def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]:
     user_service = get_user_service()
     demo_directory = get_care_service().get_demo_directory()
-    stream_service = get_stream_service()
     demo_elder_by_device_mac = {}
     for elder in demo_directory.elders:
         for mac in elder.device_macs or ([elder.device_mac] if elder.device_mac else []):
@@ -139,7 +160,7 @@ def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]
                 bind_status=device.bind_status,
                 elder_id=elder.id if elder else getattr(demo_elder, "id", None),
                 elder_name=elder.name if elder else getattr(demo_elder, "name", None),
-                latest_sample=stream_service.latest(device.mac_address),
+                latest_sample=get_display_latest_sample(device.mac_address, device.ingest_mode),
             )
         )
     return metrics
@@ -367,6 +388,18 @@ def _dashboard_reasons_from_structured(insight: StructuredHealthInsight | None, 
     return fallback
 
 
+def _device_visible_for_bound_dashboard(device: DeviceRecord | None) -> bool:
+    if device is None:
+        return False
+    if device.ingest_mode.value == "mock":
+        return True
+    return device.bind_status == DeviceBindStatus.BOUND and bool(device.user_id)
+
+
+def _device_can_show_live_dashboard_data(device: DeviceRecord | None) -> bool:
+    return _device_visible_for_bound_dashboard(device) and device is not None and device.status != DeviceStatus.OFFLINE
+
+
 def _build_relation_topology(
     directory,
     devices: list[DeviceRecord],
@@ -380,11 +413,22 @@ def _build_relation_topology(
 
     lanes: list[RelationTopologyLane] = []
     bound_device_macs: set[str] = set()
+    device_by_mac = {device.mac_address: device for device in devices}
     for elder in directory.elders:
-        elder_devices = sorted(devices_by_user.get(elder.id, []), key=lambda item: item.created_at)
+        elder_devices = sorted(
+            [
+                device
+                for device in devices_by_user.get(elder.id, [])
+                if _device_visible_for_bound_dashboard(device)
+            ],
+            key=lambda item: item.created_at,
+        )
         if not elder_devices:
             elder_devices = [
-                device for device in devices if device.mac_address in set(elder.device_macs or ([elder.device_mac] if elder.device_mac else []))
+                device
+                for mac in (elder.device_macs or ([elder.device_mac] if elder.device_mac else []))
+                for device in [device_by_mac.get(mac)]
+                if _device_visible_for_bound_dashboard(device)
             ]
         for device in elder_devices:
             bound_device_macs.add(device.mac_address)
@@ -576,6 +620,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         device.mac_address: get_display_latest_sample(device.mac_address, device.ingest_mode)
         for device in devices
     }
+    device_by_mac = {device.mac_address: device for device in devices}
 
     family_names_by_id = {family.id: family.name for family in directory.families}
     elder_by_device_mac: dict[str, object] = {}
@@ -583,7 +628,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
 
     for elder in directory.elders:
         for mac in elder.device_macs or ([elder.device_mac] if elder.device_mac else []):
-            if mac:
+            if mac and _device_visible_for_bound_dashboard(device_by_mac.get(mac)):
                 elder_by_device_mac[mac] = elder
 
     active_alarm_counts = Counter(alarm.device_mac for alarm in alarms if not alarm.acknowledged)
@@ -592,26 +637,47 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         if alarm.acknowledged or alarm.alarm_type != AlarmType.SOS:
             continue
         active_sos_by_mac.setdefault(alarm.device_mac, alarm)
-    visible_device_macs = {device.mac_address for device in devices}
+    visible_device_macs = {
+        device.mac_address for device in devices if _device_can_show_live_dashboard_data(device)
+    }
 
     top_risk_elders: list[CommunityDashboardElderItem] = []
     device_statuses: list[CommunityDashboardDeviceItem] = []
 
     for elder in directory.elders:
-        device_mac = next((mac for mac in elder.device_macs if mac), elder.device_mac or None)
-        device = next((item for item in devices if item.mac_address == device_mac), None) if device_mac else None
-        sample = latest_by_mac.get(device_mac) if device_mac else None
-        active_alarm_count = active_alarm_counts.get(device_mac or "", 0)
-        risk_level, risk_score, risk_reasons = _sample_health_risk_reasons(
-            device_status=device.status.value if device else "unknown",
-            latest_health_score=sample.health_score if sample else None,
-            heart_rate=sample.heart_rate if sample else None,
-            blood_oxygen=sample.blood_oxygen if sample else None,
-            temperature=sample.temperature if sample else None,
-            sos_flag=bool(sample.sos_flag) if sample else False,
-            active_alarm_count=active_alarm_count,
+        device_mac = next(
+            (
+                mac
+                for mac in elder.device_macs
+                if mac and _device_visible_for_bound_dashboard(device_by_mac.get(mac))
+            ),
+            None,
+        ) or (
+            elder.device_mac
+            if elder.device_mac and _device_visible_for_bound_dashboard(device_by_mac.get(elder.device_mac))
+            else None
         )
-        structured = structured_by_device.get(device_mac or "")
+        device = next((item for item in devices if item.mac_address == device_mac), None) if device_mac else None
+        sample = latest_by_mac.get(device_mac) if _device_can_show_live_dashboard_data(device) else None
+        active_alarm_count = active_alarm_counts.get(device_mac or "", 0)
+        if device is None:
+            risk_level = "low"
+            risk_score = 0
+            risk_reasons = ["当前无设备，请先在移动端完成手环绑定。"]
+            structured = None
+            elder_device_status = "no_device"
+        else:
+            risk_level, risk_score, risk_reasons = _sample_health_risk_reasons(
+                device_status=device.status.value,
+                latest_health_score=sample.health_score if sample else None,
+                heart_rate=sample.heart_rate if sample else None,
+                blood_oxygen=sample.blood_oxygen if sample else None,
+                temperature=sample.temperature if sample else None,
+                sos_flag=bool(sample.sos_flag) if sample else False,
+                active_alarm_count=active_alarm_count,
+            )
+            structured = structured_by_device.get(device_mac or "") if _device_can_show_live_dashboard_data(device) else None
+            elder_device_status = device.status.value
         dashboard_risk_level = _dashboard_risk_from_structured(structured, risk_level)
         dashboard_reasons = _dashboard_reasons_from_structured(structured, risk_reasons)
         top_risk_elders.append(
@@ -624,7 +690,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                 risk_level=dashboard_risk_level,
                 risk_score=risk_score,
                 risk_reasons=dashboard_reasons,
-                device_status=device.status.value if device else "unknown",
+                device_status=elder_device_status,
                 latest_timestamp=(
                     structured.evaluated_at
                     if structured and structured.evaluated_at
@@ -645,7 +711,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
 
     for device in devices:
         elder = elder_by_device_mac.get(device.mac_address)
-        sample = latest_by_mac.get(device.mac_address)
+        sample = latest_by_mac.get(device.mac_address) if _device_can_show_live_dashboard_data(device) else None
         effective_ingest_mode = get_effective_device_ingest_mode(device.mac_address, device.ingest_mode)
         active_alarm_count = active_alarm_counts.get(device.mac_address, 0)
         risk_level, _, risk_reasons = _sample_health_risk_reasons(
@@ -657,7 +723,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
             sos_flag=bool(sample.sos_flag) if sample else False,
             active_alarm_count=active_alarm_count,
         )
-        structured = structured_by_device.get(device.mac_address)
+        structured = structured_by_device.get(device.mac_address) if _device_can_show_live_dashboard_data(device) else None
         dashboard_risk_level = _dashboard_risk_from_structured(structured, risk_level)
         dashboard_reasons = _dashboard_reasons_from_structured(structured, risk_reasons)
         active_sos_alarm = active_sos_by_mac.get(device.mac_address)
@@ -756,7 +822,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         top_risk_elders=sorted(
             top_risk_elders,
             key=lambda item: (item.risk_level != "high", item.risk_level != "medium", -item.risk_score),
-        )[:10],
+        ),
         device_statuses=sorted(
             device_statuses,
             key=_device_status_sort_key,

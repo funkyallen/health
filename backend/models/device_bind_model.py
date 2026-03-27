@@ -6,6 +6,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, field_validator
 
 from backend.models.device_model import normalize_and_validate_mac
+from backend.models.device_model import DeviceIngestMode
 
 
 class DeviceBindRequest(BaseModel):
@@ -35,6 +36,20 @@ class DeviceRebindRequest(BaseModel):
     new_user_id: str
     operator_id: str | None = None
     reason: str | None = None
+
+    @field_validator("mac_address")
+    @classmethod
+    def validate_mac_address(cls, value: str) -> str:
+        return normalize_and_validate_mac(value)
+
+
+class DeviceSelfBindRequest(BaseModel):
+    mac_address: str
+    device_name: str | None = None
+    model_code: str = "t10_v3"
+    ingest_mode: DeviceIngestMode = DeviceIngestMode.SERIAL
+    service_uuid: str | None = None
+    device_uuid: str | None = None
 
     @field_validator("mac_address")
     @classmethod

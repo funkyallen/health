@@ -130,6 +130,7 @@ class T10PacketParser:
         temperature = round(int.from_bytes(payload[27:29], byteorder="big") / 100.0, 2)
         sos_value = payload[29] if len(payload) >= 30 else 0
         sos_trigger = self._decode_sos_trigger(sos_value)
+        sos_flag = sos_trigger is not None
 
         normalized_mac = self._normalize_mac(device_mac)
         return HealthSample(
@@ -139,7 +140,7 @@ class T10PacketParser:
             temperature=temperature,
             blood_oxygen=blood_oxygen,
             battery=0,
-            sos_flag=bool(sos_value),
+            sos_flag=sos_flag,
             sos_value=sos_value,
             sos_trigger=sos_trigger,
             source=source,

@@ -3,11 +3,13 @@ import {
   api,
   type AlarmRecord,
   type CommunityDashboardDeviceItem,
+  type CommunityDashboardElderItem,
   type CommunityDashboardSummary,
   type CommunityRelationTopology,
   type HealthSample,
   type SessionUser,
 } from "../api/client";
+import { mergeHealthSample, mergeHealthSeries } from "../domain/healthSampleMerge";
 import { getStoredSessionToken } from "./useSessionAuth";
 
 export const SELECTED_DEVICE_STORAGE_KEY = "community-workspace-selected-device";
@@ -15,7 +17,7 @@ export const SELECTED_DEVICE_STORAGE_KEY = "community-workspace-selected-device"
 const summary = ref<CommunityDashboardSummary | null>(null);
 const dashboardLoading = ref(false);
 const dashboardLoadError = ref("");
-const selectedDeviceMac = ref("");
+const selectedElderId = ref("");
 const lastSyncAt = ref<Date | null>(null);
 const latestByDevice = ref<Record<string, HealthSample>>({});
 const trendStore = ref<Record<string, HealthSample[]>>({});
@@ -31,6 +33,7 @@ let trendRuntimeVersion = 0;
 let serialTargetSyncVersion = 0;
 let alarmReconnectTimer: number | null = null;
 let alarmReconnectAttempts = 0;
+let pendingFocusedDeviceMac = "";
 
 const activeAlarms = ref<AlarmRecord[]>([]);
 const sosAlarmQueue = ref<AlarmRecord[]>([]);
@@ -52,6 +55,10 @@ const deviceStatuses = computed(() => summary.value?.device_statuses ?? []);
 const recentAlerts = computed(() => summary.value?.recent_alerts ?? []);
 const scoreTrend = computed(() => summary.value?.trend ?? []);
 const relationTopology = computed(() => summary.value?.relation_topology ?? null);
+const selectedElder = computed<CommunityDashboardElderItem | null>(
+  () => topRiskElders.value.find((item) => item.elder_id === selectedElderId.value) ?? null,
+);
+const selectedDeviceMac = computed(() => selectedElder.value?.device_mac ?? "");
 const focusLatest = computed(() =>
   selectedDeviceMac.value ? latestByDevice.value[selectedDeviceMac.value] ?? null : null,
 );
@@ -83,9 +90,7 @@ function sampleTimestampMs(sample: Pick<HealthSample, "timestamp">) {
 }
 
 function mergeTrendPoints(samples: HealthSample[]) {
-  return [...samples]
-    .sort((left, right) => sampleTimestampMs(left) - sampleTimestampMs(right))
-    .filter((item, index, array) => index === 0 || item.timestamp !== array[index - 1].timestamp);
+  return mergeHealthSeries(samples);
 }
 
 /**
@@ -218,11 +223,47 @@ const selectedMonitorCurrentSample = computed<HealthSample | null>(() => {
 });
 
 function persistSelectedDevice(mac: string) {
-  const unchanged = selectedDeviceMac.value === mac;
-  selectedDeviceMac.value = mac;
-  if (typeof window !== "undefined") {
-    window.sessionStorage.setItem(SELECTED_DEVICE_STORAGE_KEY, mac);
+  if (!mac) {
+    pendingFocusedDeviceMac = "";
+    selectedElderId.value = "";
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(SELECTED_DEVICE_STORAGE_KEY);
+    }
+    return;
   }
+
+  const matchedElder = topRiskElders.value.find((item) => item.device_mac === mac);
+  if (matchedElder) {
+    const unchanged = selectedElderId.value === matchedElder.elder_id;
+    pendingFocusedDeviceMac = "";
+    selectedElderId.value = matchedElder.elder_id;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(SELECTED_DEVICE_STORAGE_KEY, `elder:${matchedElder.elder_id}`);
+    }
+    if (unchanged && activeConsumers > 0 && isSerialDevice(mac)) {
+      void handleSelectedDeviceChange(mac);
+    }
+    return;
+  }
+
+  pendingFocusedDeviceMac = mac;
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(SELECTED_DEVICE_STORAGE_KEY, `device:${mac}`);
+  }
+}
+
+function persistSelectedElder(elderId: string) {
+  const unchanged = selectedElderId.value === elderId;
+  selectedElderId.value = elderId;
+  pendingFocusedDeviceMac = "";
+  if (typeof window !== "undefined") {
+    if (elderId) {
+      window.sessionStorage.setItem(SELECTED_DEVICE_STORAGE_KEY, `elder:${elderId}`);
+    } else {
+      window.sessionStorage.removeItem(SELECTED_DEVICE_STORAGE_KEY);
+    }
+  }
+  const mac = topRiskElders.value.find((item) => item.elder_id === elderId)?.device_mac ?? "";
   if (unchanged && activeConsumers > 0 && mac && isSerialDevice(mac)) {
     void handleSelectedDeviceChange(mac);
   }
@@ -236,7 +277,20 @@ export function focusCommunityWorkspaceDevice(mac: string) {
 function restoreSelectedDevice() {
   if (typeof window === "undefined") return;
   const stored = window.sessionStorage.getItem(SELECTED_DEVICE_STORAGE_KEY);
-  if (stored) selectedDeviceMac.value = stored;
+  if (!stored) return;
+  if (stored.startsWith("elder:")) {
+    selectedElderId.value = stored.slice("elder:".length);
+    return;
+  }
+  if (stored.startsWith("device:")) {
+    pendingFocusedDeviceMac = stored.slice("device:".length);
+    return;
+  }
+  if (stored.includes(":")) {
+    pendingFocusedDeviceMac = stored;
+    return;
+  }
+  selectedElderId.value = stored;
 }
 
 function stopDashboardPolling() {
@@ -334,7 +388,7 @@ function updateLatestFromDevices(list: CommunityDashboardDeviceItem[]) {
     if (!samplePassesSelectionGate(snapshot, device.device_mac)) continue;
     const existing = nextLatest[device.device_mac];
     if (!existing || sampleTimestampMs(snapshot) >= sampleTimestampMs(existing)) {
-      nextLatest[device.device_mac] = snapshot;
+      nextLatest[device.device_mac] = mergeHealthSample(existing, snapshot) ?? snapshot;
     }
   }
   latestByDevice.value = nextLatest;
@@ -355,13 +409,15 @@ async function refreshDashboardData() {
     summary.value = data;
     updateLatestFromDevices(data.device_statuses);
 
-    const visibleDeviceMacs = new Set(data.device_statuses.map((item) => item.device_mac));
-    if (!selectedDeviceMac.value || !visibleDeviceMacs.has(selectedDeviceMac.value)) {
-      persistSelectedDevice(
-        data.top_risk_elders.find((item) => item.device_mac)?.device_mac
-          ?? data.device_statuses[0]?.device_mac
-          ?? "",
-      );
+    const visibleElderIds = new Set(data.top_risk_elders.map((item) => item.elder_id));
+    if (pendingFocusedDeviceMac) {
+      const matchedElder = data.top_risk_elders.find((item) => item.device_mac === pendingFocusedDeviceMac);
+      if (matchedElder) {
+        persistSelectedElder(matchedElder.elder_id);
+      }
+    }
+    if (!selectedElderId.value || !visibleElderIds.has(selectedElderId.value)) {
+      persistSelectedElder(data.top_risk_elders[0]?.elder_id ?? "");
     }
 
     lastSyncAt.value = data.metrics.last_sync_at ? new Date(data.metrics.last_sync_at) : new Date();
@@ -386,26 +442,26 @@ async function refreshRealtime(mac = selectedDeviceMac.value) {
   const sample = await api.getRealtime(mac).catch(() => null as HealthSample | null);
   if (!sample) return;
   const ingestMode = getDeviceByMac(mac)?.ingest_mode ?? null;
-  if (!shouldAcceptSample(sample, mac, ingestMode)) return;
-  markFreshSerialSample(mac, sample);
-  latestByDevice.value = { ...latestByDevice.value, [mac]: sample };
+  const mergedSample = mergeHealthSample(latestByDevice.value[mac], sample) ?? sample;
+  if (!shouldAcceptSample(mergedSample, mac, ingestMode)) return;
+  markFreshSerialSample(mac, mergedSample);
+  latestByDevice.value = { ...latestByDevice.value, [mac]: mergedSample };
 }
 
 async function refreshTrend(mac = selectedDeviceMac.value, minutes = trendWindowMinutes.value) {
   if (!mac) return;
   const ingestMode = getDeviceByMac(mac)?.ingest_mode ?? null;
   const trend = await api.getTrend(mac, minutes, 120).catch(() => [] as HealthSample[]);
-  const displayReady = trend.filter((sample) => isDisplayReadySample(sample, ingestMode));
-  const gate = getSerialGate(mac);
-  // For serial devices with an active gate, only keep post-switch samples in the store.
-  // This ensures the chart never shows pre-switch data after a device switch.
-  const storeSamples = gate
-    ? displayReady.filter((sample) => sampleTimestampMs(sample) >= gate.switchedAtMs)
-    : displayReady;
+  const mergedTrend = mergeHealthSeries(trend);
+  const displayReady = mergedTrend.filter((sample) => isDisplayReadySample(sample, ingestMode));
+  const storeSamples = displayReady;
   const gated = storeSamples.filter((sample) => samplePassesSelectionGate(sample, mac));
   if (gated.length) {
     markFreshSerialSample(mac, gated[gated.length - 1]);
-    latestByDevice.value = { ...latestByDevice.value, [mac]: gated[gated.length - 1] };
+    latestByDevice.value = {
+      ...latestByDevice.value,
+      [mac]: mergeHealthSample(latestByDevice.value[mac], gated[gated.length - 1]) ?? gated[gated.length - 1],
+    };
   }
   trendStore.value = { ...trendStore.value, [mac]: storeSamples.slice(-120) };
 }
@@ -420,14 +476,12 @@ function connectHealthSocket(mac: string) {
     try {
       const sample = JSON.parse(event.data) as HealthSample;
       const ingestMode = getDeviceByMac(sample.device_mac)?.ingest_mode ?? null;
-      if (!shouldAcceptSample(sample, sample.device_mac, ingestMode)) return;
-      markFreshSerialSample(sample.device_mac, sample);
-      latestByDevice.value = { ...latestByDevice.value, [sample.device_mac]: sample };
-      const gate = getSerialGate(sample.device_mac);
-      const previous = (trendStore.value[sample.device_mac] ?? []).filter(
-        (s) => !gate || sampleTimestampMs(s) >= gate.switchedAtMs,
-      );
-      const merged = mergeTrendPoints([...previous, sample]);
+      const mergedLatest = mergeHealthSample(latestByDevice.value[sample.device_mac], sample) ?? sample;
+      if (!shouldAcceptSample(mergedLatest, sample.device_mac, ingestMode)) return;
+      markFreshSerialSample(sample.device_mac, mergedLatest);
+      latestByDevice.value = { ...latestByDevice.value, [sample.device_mac]: mergedLatest };
+      const previous = trendStore.value[sample.device_mac] ?? [];
+      const merged = mergeTrendPoints([...previous, mergedLatest]);
       trendStore.value = { ...trendStore.value, [sample.device_mac]: merged.slice(-240) };
     } catch {
       // keep runtime stable on malformed socket payloads
@@ -481,12 +535,6 @@ async function handleSelectedDeviceChange(mac: string) {
     stopTrendRuntime();
     return;
   }
-  if (isSerialDevice(mac)) {
-    // Clear trend so the chart starts fresh from the moment of switch.
-    // Any samples older than switchedAtMs will be excluded by samplePassesSelectionGate.
-    trendStore.value = { ...trendStore.value, [mac]: [] };
-    latestByDevice.value = { ...latestByDevice.value, [mac]: undefined as unknown as HealthSample };
-  }
   await syncSelectedSerialTarget(mac);
   if (activeConsumers > 0) {
     await startTrendRuntime();
@@ -528,11 +576,14 @@ export type CommunityWorkspaceState = {
   refreshTrend: (mac?: string, minutes?: number) => Promise<void>;
   relationTopology: ComputedRef<CommunityRelationTopology | null | undefined>;
   scoreTrend: ComputedRef<CommunityDashboardSummary["trend"]>;
+  selectedElder: ComputedRef<CommunityDashboardElderItem | null>;
+  selectedElderId: Ref<string>;
   selectedDevice: ComputedRef<CommunityDashboardDeviceItem | null>;
-  selectedDeviceMac: Ref<string>;
+  selectedDeviceMac: ComputedRef<string>;
   selectedMonitorCurrentSample: ComputedRef<HealthSample | null>;
   selectedMonitorSamples: ComputedRef<HealthSample[]>;
   selectedStructured: ComputedRef<CommunityDashboardDeviceItem["structured_health"] | null>;
+  setSelectedElderId: (elderId: string) => void;
   setSelectedDeviceMac: (mac: string) => void;
   sosAlarmQueue: Ref<AlarmRecord[]>;
   summary: Ref<CommunityDashboardSummary | null>;
@@ -549,6 +600,8 @@ export function useCommunityWorkspace(sessionUser: Ref<SessionUser | null>): Com
         runtimeUserId = "";
         stopWorkspaceRuntime();
         summary.value = null;
+        selectedElderId.value = "";
+        pendingFocusedDeviceMac = "";
         latestByDevice.value = {};
         trendStore.value = {};
         serialSelectionGate.value = null;
@@ -563,7 +616,6 @@ export function useCommunityWorkspace(sessionUser: Ref<SessionUser | null>): Com
   );
 
   watch(selectedDeviceMac, (mac) => {
-    persistSelectedDevice(mac);
     void handleSelectedDeviceChange(mac);
   });
 
@@ -601,11 +653,14 @@ export function useCommunityWorkspace(sessionUser: Ref<SessionUser | null>): Com
     refreshTrend,
     relationTopology,
     scoreTrend,
+    selectedElder,
+    selectedElderId,
     selectedDevice,
     selectedDeviceMac,
     selectedMonitorCurrentSample,
     selectedMonitorSamples,
     selectedStructured,
+    setSelectedElderId: persistSelectedElder,
     setSelectedDeviceMac: persistSelectedDevice,
     sosAlarmQueue,
     summary,

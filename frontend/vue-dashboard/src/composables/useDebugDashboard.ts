@@ -1,5 +1,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { api, type DeviceRecord, type HealthSample } from "../api/client";
+import { mergeHealthSample } from "../domain/healthSampleMerge";
 
 export function useDebugDashboard(pollIntervalMs = 5000) {
   const devices = ref<DeviceRecord[]>([]);
@@ -34,7 +35,9 @@ export function useDebugDashboard(pollIntervalMs = 5000) {
     const samples = await Promise.all(devices.value.map((device) => api.getRealtime(device.mac_address).catch(() => null)));
     const nextLatest = { ...latest.value };
     samples.forEach((sample) => {
-      if (sample) nextLatest[sample.device_mac] = sample;
+      if (sample) {
+        nextLatest[sample.device_mac] = mergeHealthSample(nextLatest[sample.device_mac], sample) ?? sample;
+      }
     });
     latest.value = nextLatest;
 

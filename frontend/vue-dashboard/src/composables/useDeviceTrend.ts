@@ -1,5 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
 import { api, type HealthSample } from "../api/client";
+import { mergeHealthSample, mergeHealthSeries } from "../domain/healthSampleMerge";
 
 const DISPLAY_READY_SERIAL_PACKET_TYPES = new Set(["response_ab", "response_a", "response_a_only", "broadcast", "legacy_response", "legacy_response_a", "legacy_response_b"]);
 
@@ -48,7 +49,15 @@ export function useDeviceTrend(options: {
   async function refreshTrend(mac = options.selectedDeviceMac.value, minutes = trendWindowMinutes.value) {
     if (!mac) return;
     const trend = await api.getTrend(mac, minutes, 120).catch(() => []);
-    trendStore.value = { ...trendStore.value, [mac]: trend };
+    const mergedTrend = mergeHealthSeries(trend);
+    if (mergedTrend.length) {
+      const latestSample = mergedTrend[mergedTrend.length - 1];
+      options.latest.value = {
+        ...options.latest.value,
+        [mac]: mergeHealthSample(options.latest.value[mac], latestSample) ?? latestSample,
+      };
+    }
+    trendStore.value = { ...trendStore.value, [mac]: mergedTrend.slice(-240) };
   }
 
   function stopRuntime() {
@@ -70,14 +79,10 @@ export function useDeviceTrend(options: {
     healthSocket.onmessage = (event) => {
       try {
         const sample = JSON.parse(event.data) as HealthSample;
-        options.latest.value = { ...options.latest.value, [sample.device_mac]: sample };
+        const mergedLatest = mergeHealthSample(options.latest.value[sample.device_mac], sample) ?? sample;
+        options.latest.value = { ...options.latest.value, [sample.device_mac]: mergedLatest };
         const previous = trendStore.value[sample.device_mac] ?? [];
-        const merged = [...previous, sample]
-          .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime())
-          .filter((item, index, array) => {
-            if (index === 0) return true;
-            return item.timestamp !== array[index - 1].timestamp;
-          });
+        const merged = mergeHealthSeries([...previous, mergedLatest]);
         trendStore.value = { ...trendStore.value, [sample.device_mac]: merged.slice(-240) };
       } catch {
         // Keep page state stable if socket data is malformed.

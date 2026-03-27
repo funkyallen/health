@@ -1,158 +1,339 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../care/models/care_profile_model.dart';
+import '../models/agent_experience.dart';
 import '../providers/agent_provider.dart';
+import 'agent_chat_components.dart';
 
 class AiChatDialog extends StatefulWidget {
   final String? deviceMac;
-  
-  const AiChatDialog({super.key, this.deviceMac});
+  final List<CareAccessDeviceMetric> availableDevices;
+
+  const AiChatDialog({
+    super.key,
+    this.deviceMac,
+    this.availableDevices = const <CareAccessDeviceMetric>[],
+  });
 
   @override
   State<AiChatDialog> createState() => _AiChatDialogState();
 }
 
 class _AiChatDialogState extends State<AiChatDialog> {
+  static const AgentExperience _experience = AgentExperience.family;
+
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final Set<String> _selectedDeviceMacs = <String>{};
 
-  final List<String> _presetPrompts = [
-    '提供最近一天的健康情况',
-    '今天有任何异常体征吗？',
-    '心率波动正常吗？',
-  ];
+  AgentProvider? _agentProvider;
+  String _lastAssistantSnapshot = '';
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _selectedDeviceMacs.addAll(_buildInitialSelection());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AgentProvider>().init('你好！我是智能守护助手，可以直接向我提问老人的健康状况。');
+      if (!mounted) {
+        return;
+      }
+      context.read<AgentProvider>().init(_experience.introMessage);
     });
   }
 
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    _textController.clear();
-    _focusNode.unfocus();
-    
-    context.read<AgentProvider>().sendMessage(text, deviceMac: widget.deviceMac);
-    _scrollToBottom();
-  }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<AgentProvider>();
+    if (!identical(_agentProvider, provider)) {
+      _agentProvider?.removeListener(_handleAgentChanged);
+      _agentProvider = provider;
+      _agentProvider?.addListener(_handleAgentChanged);
     }
   }
 
   @override
+  void dispose() {
+    _agentProvider?.removeListener(_handleAgentChanged);
+    _textController.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  List<String> _buildInitialSelection() {
+    final available = widget.availableDevices
+        .map((CareAccessDeviceMetric item) => item.deviceMac.trim())
+        .where((String mac) => mac.isNotEmpty)
+        .toList(growable: false);
+    if (available.isNotEmpty) {
+      return available;
+    }
+
+    final primary = widget.deviceMac?.trim() ?? '';
+    return primary.isEmpty ? const <String>[] : <String>[primary];
+  }
+
+  List<String> _orderedSelectedMacs() {
+    final ordered = <String>[];
+    final seen = <String>{};
+
+    void collect(String mac) {
+      final normalized = mac.trim();
+      if (normalized.isEmpty || seen.contains(normalized)) {
+        return;
+      }
+      seen.add(normalized);
+      ordered.add(normalized);
+    }
+
+    for (final device in widget.availableDevices) {
+      if (_selectedDeviceMacs.contains(device.deviceMac.trim())) {
+        collect(device.deviceMac);
+      }
+    }
+    for (final mac in _selectedDeviceMacs) {
+      collect(mac);
+    }
+    return ordered;
+  }
+
+  void _handleAgentChanged() {
+    final provider = _agentProvider;
+    if (!mounted || provider == null) {
+      return;
+    }
+
+    final messages = provider.messages;
+    final currentAssistantSnapshot =
+        messages.isNotEmpty ? messages.last.content : '';
+    final shouldScroll = messages.length != _lastMessageCount ||
+        currentAssistantSnapshot != _lastAssistantSnapshot ||
+        provider.status == AgentStatus.loading ||
+        provider.status == AgentStatus.streaming;
+
+    _lastMessageCount = messages.length;
+    _lastAssistantSnapshot = currentAssistantSnapshot;
+
+    if (shouldScroll) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  Future<void> _sendMessage(String text) async {
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) {
+      return;
+    }
+
+    final selectedMacs = _orderedSelectedMacs();
+    if (selectedMacs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_experience.missingDeviceHint)),
+      );
+      return;
+    }
+
+    _textController.clear();
+    _focusNode.unfocus();
+
+    await context.read<AgentProvider>().sendMessage(
+          normalizedText,
+          deviceMac: selectedMacs.first,
+          deviceMacs: selectedMacs,
+          role: _experience.apiRole,
+        );
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    Future<void>.delayed(const Duration(milliseconds: 80), () {
+      if (!_scrollController.hasClients) {
+        return;
+      }
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1D24),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        color: const Color(0xFF0B1820),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: Colors.white10),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.32),
+            blurRadius: 24,
+            offset: const Offset(0, -12),
+          ),
+        ],
       ),
       padding: EdgeInsets.only(
-        top: 16,
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 18,
+        left: 18,
+        right: 18,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: Color(0xFFFF875A)),
-                  SizedBox(width: 8),
-                  Text('智能守护助手', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(color: Colors.white10, height: 24),
-          
+        children: <Widget>[
+          _buildHeader(),
+          const SizedBox(height: 14),
+          _buildDeviceBanner(),
+          if (widget.availableDevices.length > 1) ...<Widget>[
+            const SizedBox(height: 12),
+            _buildDeviceSelector(),
+          ],
+          const SizedBox(height: 14),
           Flexible(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.4,
+                maxHeight: MediaQuery.of(context).size.height * 0.58,
               ),
-              child: Consumer<AgentProvider>(
-                builder: (context, provider, child) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-                  
-                  final showLoading = provider.status == AgentStatus.loading;
+              child: ListView.builder(
+                controller: _scrollController,
+                shrinkWrap: true,
+                itemCount:
+                    provider.messages.length + (provider.status == AgentStatus.loading ? 1 : 0),
+                itemBuilder: (BuildContext context, int index) {
+                  if (index == provider.messages.length) {
+                    return AgentLoadingBubble(
+                      accent: _experience.accent,
+                      assistantIcon: _experience.assistantIcon,
+                      label: _experience.loadingLabel,
+                      compact: true,
+                    );
+                  }
 
-                  return ListView.builder(
-                    controller: _scrollController,
-                    shrinkWrap: true,
-                    itemCount: provider.messages.length + (showLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == provider.messages.length) {
-                        return _buildLoadingBubble();
-                      }
-                      
-                      final msg = provider.messages[index];
-                      final isUser = msg.role == 'user';
-                      final isStreaming = !isUser && 
-                          provider.status == AgentStatus.streaming &&
-                          index == provider.messages.length - 1;
-                      
-                      return _buildMessageBubble(msg.content, isUser, isStreaming: isStreaming);
-                    },
+                  final message = provider.messages[index];
+                  final isUser = message.role == 'user';
+                  final isStreaming = !isUser &&
+                      provider.status == AgentStatus.streaming &&
+                      index == provider.messages.length - 1;
+
+                  return AgentMessageBubble(
+                    text: message.content,
+                    isUser: isUser,
+                    isStreaming: isStreaming,
+                    accent: _experience.accent,
+                    assistantIcon: _experience.assistantIcon,
+                    assistantLabel: _experience.assistantLabel,
+                    userLabel: _experience.userLabel,
+                    streamingLabel: _experience.streamingLabel,
+                    fontSize: 14,
+                    compact: true,
                   );
                 },
               ),
             ),
           ),
-          
-          const SizedBox(height: 16),
-          _buildPresetChips(),
           const SizedBox(height: 12),
-          
-          // Input Area
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      hintText: '向助手提问...',
-                      hintStyle: TextStyle(color: Colors.white30),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onSubmitted: _sendMessage,
-                  ),
+          if (provider.status != AgentStatus.loading &&
+              provider.status != AgentStatus.streaming)
+            _buildPresetSection(),
+          const SizedBox(height: 12),
+          _buildInputBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _experience.accent.withValues(alpha: 0.16),
+          ),
+          child: Icon(
+            _experience.assistantIcon,
+            color: _experience.accent,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                _experience.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFFFF875A)),
-                  onPressed: () => _sendMessage(_textController.text),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _experience.subtitle,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.62),
+                  fontSize: 12,
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white54),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceBanner() {
+    final selectedMacs = _orderedSelectedMacs();
+    final label = selectedMacs.isEmpty
+        ? _experience.missingDeviceHint
+        : selectedMacs.length == 1
+            ? '当前分析对象：${selectedMacs.first}'
+            : '当前分析对象：已选 ${selectedMacs.length} 台设备，可一起提问';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selectedMacs.isEmpty
+              ? Colors.white10
+              : _experience.accent.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            selectedMacs.isEmpty ? Icons.info_outline : Icons.devices_outlined,
+            color: selectedMacs.isEmpty ? Colors.white54 : _experience.accent,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.78),
+                fontSize: 13,
+                height: 1.45,
+              ),
             ),
           ),
         ],
@@ -160,79 +341,145 @@ class _AiChatDialogState extends State<AiChatDialog> {
     );
   }
 
-  Widget _buildPresetChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: _presetPrompts.map((prompt) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ActionChip(
-              backgroundColor: Colors.white.withOpacity(0.05),
-              side: BorderSide(color: const Color(0xFFFF875A).withOpacity(0.3)),
-              label: Text(prompt, style: const TextStyle(color: Color(0xFFFF875A), fontSize: 12)),
-              onPressed: () => _sendMessage(prompt),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(String text, bool isUser, {bool isStreaming = false}) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          color: isUser ? const Color(0xFFFF875A) : Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: Radius.circular(isUser ? 0 : 16),
-            bottomLeft: Radius.circular(isUser ? 16 : 0),
-          ),
-        ),
-        child: RichText(
-          text: TextSpan(
-            text: text.isEmpty && isStreaming ? '思考中...' : text,
+  Widget _buildDeviceSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 8),
+          child: Text(
+            '问答对象可多选',
             style: TextStyle(
-              color: isUser ? const Color(0xFF08161B) : Colors.white.withOpacity(0.9),
-              fontSize: 14,
-              height: 1.5,
-              fontWeight: isUser ? FontWeight.w500 : FontWeight.normal,
+              color: Colors.white.withValues(alpha: 0.72),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
-            children: isStreaming && text.isNotEmpty
-                ? [
-                    const TextSpan(
-                      text: ' ▌',
-                      style: TextStyle(color: Color(0xFFFF875A), fontWeight: FontWeight.bold),
-                    ),
-                  ]
-                : null,
           ),
         ),
-      ),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: widget.availableDevices.map((CareAccessDeviceMetric device) {
+            final mac = device.deviceMac.trim();
+            final isSelected = _selectedDeviceMacs.contains(mac);
+            return FilterChip(
+              selected: isSelected,
+              showCheckmark: false,
+              selectedColor: _experience.accent.withValues(alpha: 0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              side: BorderSide(
+                color: isSelected
+                    ? _experience.accent.withValues(alpha: 0.5)
+                    : Colors.white10,
+              ),
+              label: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    device.subjectName,
+                    style: TextStyle(
+                      color: isSelected ? _experience.accent : Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    mac,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.48),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              onSelected: (bool next) {
+                setState(() {
+                  if (next) {
+                    _selectedDeviceMacs.add(mac);
+                  } else {
+                    _selectedDeviceMacs.remove(mac);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
-  Widget _buildLoadingBubble() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16).copyWith(bottomLeft: const Radius.circular(0)),
+  Widget _buildPresetSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            _experience.emptyPromptTitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        child: const SizedBox(
-          width: 24,
-          height: 12,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF875A)),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _experience.presetPrompts.map((String prompt) {
+            return ActionChip(
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              side: BorderSide(
+                color: _experience.accent.withValues(alpha: 0.22),
+              ),
+              label: Text(
+                prompt,
+                style: TextStyle(
+                  color: _experience.accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: () => _sendMessage(prompt),
+            );
+          }).toList(),
         ),
+      ],
+    );
+  }
+
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: _textController,
+              focusNode: _focusNode,
+              style: const TextStyle(color: Colors.white),
+              minLines: 1,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: _experience.inputHint,
+                hintStyle: const TextStyle(color: Colors.white30),
+                border: InputBorder.none,
+              ),
+              onSubmitted: (String value) => _sendMessage(value),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.send_rounded, color: _experience.accent),
+            onPressed: () => _sendMessage(_textController.text),
+          ),
+        ],
       ),
     );
   }
 }
-

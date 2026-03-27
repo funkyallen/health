@@ -5,9 +5,15 @@ class TrendPoint {
   TrendPoint({required this.timestamp, required this.value});
 
   factory TrendPoint.fromJson(Map<String, dynamic> json) {
+    final parsedValue = (json['value'] as num?)?.toDouble() ??
+        (json['heart_rate'] as num?)?.toDouble() ??
+        (json['blood_oxygen'] as num?)?.toDouble() ??
+        (json['temperature'] as num?)?.toDouble() ??
+        0;
+
     return TrendPoint(
       timestamp: DateTime.parse(json['timestamp'] as String),
-      value: (json['value'] as num).toDouble(),
+      value: parsedValue,
     );
   }
 }
@@ -56,8 +62,8 @@ class DeviceHistoryResponse {
   factory DeviceHistoryResponse.fromJson(Map<String, dynamic> json) {
     return DeviceHistoryResponse(
       window: json['window'] as String,
-      points: (json['points'] as List)
-          .map((e) => HistoryBucket.fromJson(e as Map<String, dynamic>))
+      points: (json['points'] as List<dynamic>)
+          .map((entry) => HistoryBucket.fromJson(entry as Map<String, dynamic>))
           .toList(),
     );
   }

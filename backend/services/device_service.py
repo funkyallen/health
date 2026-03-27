@@ -231,9 +231,16 @@ class DeviceService:
             device = self.get_device(payload.mac_address)
             if device is None:
                 raise ValueError("DEVICE_NOT_FOUND")
-            if device.user_id is None or device.bind_status != DeviceBindStatus.BOUND:
+            if device.user_id is None and device.bind_status != DeviceBindStatus.BOUND:
                 raise ValueError("DEVICE_NOT_BOUND")
-            updated = device.model_copy(update={"user_id": None, "bind_status": DeviceBindStatus.UNBOUND})
+            update: dict[str, object] = {
+                "user_id": None,
+                "bind_status": DeviceBindStatus.UNBOUND,
+            }
+            if device.ingest_mode == DeviceIngestMode.SERIAL:
+                update["status"] = DeviceStatus.PENDING
+                update["activation_state"] = DeviceActivationState.PENDING
+            updated = device.model_copy(update=update)
             self._devices[updated.mac_address] = updated
             self._upsert_device(updated)
             if updated.ingest_mode == DeviceIngestMode.SERIAL:
@@ -327,6 +334,8 @@ class DeviceService:
         if self._user_service is None:
             return
         user = self._user_service.get_user(user_id)
+        if user is None and self._is_demo_elder_user_id(user_id):
+            return
         if user is None:
             raise ValueError("USER_NOT_FOUND")
         if user.role != UserRole.ELDER:
@@ -386,6 +395,14 @@ class DeviceService:
     @staticmethod
     def _normalize_device_name(device_name: str) -> str:
         return device_name.strip().upper()
+
+    @staticmethod
+    def _is_demo_elder_user_id(user_id: str) -> bool:
+        normalized = user_id.strip().lower()
+        if not normalized.startswith("elder-"):
+            return False
+        suffix = normalized.removeprefix("elder-")
+        return suffix.isdigit()
 
     def _initialize_storage(self) -> None:
         with self._connection() as connection:
@@ -514,6 +531,8 @@ class DeviceService:
         if (
             device is None
             or device.ingest_mode != DeviceIngestMode.SERIAL
+            or device.bind_status != DeviceBindStatus.BOUND
+            or not device.user_id
             or device.bind_status == DeviceBindStatus.DISABLED
         ):
             self._active_serial_target_mac = None
@@ -527,6 +546,8 @@ class DeviceService:
                 device
                 for device in self._devices.values()
                 if device.ingest_mode == DeviceIngestMode.SERIAL
+                and device.bind_status == DeviceBindStatus.BOUND
+                and device.user_id
                 and device.bind_status != DeviceBindStatus.DISABLED
             ),
             key=lambda item: (item.created_at, item.mac_address),

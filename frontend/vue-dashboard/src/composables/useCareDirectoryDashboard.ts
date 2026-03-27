@@ -7,6 +7,7 @@ import {
   type HealthSample,
   type SessionUser,
 } from "../api/client";
+import { mergeHealthSample } from "../domain/healthSampleMerge";
 
 type MaybeRef<T> = T | Ref<T>;
 
@@ -81,7 +82,9 @@ export function useCareDirectoryDashboard(
     const snapshots = await Promise.all(devices.value.map((device) => api.getRealtime(device.mac_address).catch(() => null)));
     const nextLatest = { ...latest.value };
     snapshots.forEach((sample) => {
-      if (sample) nextLatest[sample.device_mac] = sample;
+      if (sample) {
+        nextLatest[sample.device_mac] = mergeHealthSample(nextLatest[sample.device_mac], sample) ?? sample;
+      }
     });
     latest.value = nextLatest;
 

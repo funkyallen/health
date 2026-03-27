@@ -630,10 +630,18 @@ class SyntheticHealthDataGenerator:
         mac = ":".join([*self._mac_prefix.split(":"), suffix[0:2], suffix[2:4], suffix[4:6]])
         scenario_profile = [
             "stable_normal",
+            "stable_normal",
+            "stable_normal",
             "chronic_risk",
+            "stable_normal",
+            "stable_normal",
+            "stable_normal",
             "escalating_anomaly",
+            "stable_normal",
+            "stable_normal",
+            "stable_normal",
             "alert_active",
-        ][index % 4]
+        ][index % 12]
         display_name = f"Demo Elder {index + 1:02d}"
         apartment = f"{1 + (index // 4)}-{101 + index}"
         hr_base = self._rng.randint(62, 84)

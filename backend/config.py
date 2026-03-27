@@ -113,7 +113,7 @@ class Settings(BaseSettings):
     serial_disable_uuid_output: bool = True
     serial_apply_mac_filter: bool = False
     serial_apply_packet_type: bool = False
-    serial_enable_broadcast_sos_overlay: bool = False
+    serial_enable_broadcast_sos_overlay: bool = True
     serial_response_cycle_seconds: float = 2.0
     serial_broadcast_cycle_seconds: float = 0.5
 

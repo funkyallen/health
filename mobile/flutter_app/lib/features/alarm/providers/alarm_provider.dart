@@ -20,6 +20,7 @@ class AlarmProvider extends ChangeNotifier {
   StreamSubscription? _subscription;
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
+  bool _started = false;
 
   AlarmProvider(this._repository);
 
@@ -29,8 +30,17 @@ class AlarmProvider extends ChangeNotifier {
   List<MobilePushRecord> get pushes => _pushes;
   String? get errorMessage => _errorMessage;
 
+  Future<void> ensureStarted() async {
+    if (_started && _channel != null) {
+      return;
+    }
+    await init();
+  }
+
   Future<void> init() async {
+    _started = true;
     _status = AlarmLoadStatus.loading;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -129,8 +139,20 @@ class AlarmProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  void reset() {
+    _started = false;
+    _status = AlarmLoadStatus.initial;
+    _alarms = [];
+    _queue = [];
+    _pushes = [];
+    _errorMessage = null;
+    _reconnectTimer?.cancel();
+    _closeWebSocket();
+    notifyListeners();
+  }
+
   void reloadFromEndpointChange() {
-    if (_status == AlarmLoadStatus.initial) {
+    if (!_started) {
       return;
     }
     init();

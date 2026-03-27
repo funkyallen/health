@@ -125,12 +125,8 @@ async def healthz() -> dict[str, str]:
 async def system_info() -> dict[str, object]:
     cfg = get_settings_dependency()
     active_target = get_device_service().get_active_serial_target()
-    active_target_mac = active_target.mac_address if active_target else (cfg.serial_mac_filter or None)
-    active_target_name = (
-        active_target.device_name
-        if active_target
-        else (cfg.default_device_name if cfg.serial_mac_filter else None)
-    )
+    active_target_mac = active_target.mac_address if active_target else None
+    active_target_name = active_target.device_name if active_target else None
     return {
         "runtime_mode": cfg.runtime_mode,
         "bootstrap_source": cfg.bootstrap_source,
@@ -303,7 +299,7 @@ async def _serial_stream_loop() -> None:
         enable_broadcast_sos_overlay=settings.serial_enable_broadcast_sos_overlay,
         response_cycle_seconds=settings.serial_response_cycle_seconds,
         broadcast_cycle_seconds=settings.serial_broadcast_cycle_seconds,
-        target_mac_provider=lambda: get_device_service().get_active_serial_target_mac() or settings.serial_mac_filter,
+        target_mac_provider=lambda: get_device_service().get_active_serial_target_mac(),
         on_sample=publish_from_thread,
     )
 

@@ -31,7 +31,9 @@ class AlarmService:
         normalized: list[AlarmRecord] = []
         if alarms:
             for alarm in alarms:
-                normalized.append(self._upsert_alarm(alarm))
+                upserted = self._upsert_alarm(alarm)
+                if upserted is not None:
+                    normalized.append(upserted)
         self._alarms.sort(key=lambda item: (item.alarm_level.value, item.created_at), reverse=False)
         return normalized
 
@@ -61,24 +63,16 @@ class AlarmService:
                 return updated
         return None
 
-    def _upsert_alarm(self, alarm: AlarmRecord) -> AlarmRecord:
+    def _upsert_alarm(self, alarm: AlarmRecord) -> AlarmRecord | None:
         existing_index = self._find_active_sos_index(alarm)
         if existing_index is not None:
-            existing = self._alarms[existing_index]
-            updated = existing.model_copy(
-                update={
-                    "created_at": alarm.created_at,
-                    "message": alarm.message,
-                    "anomaly_probability": alarm.anomaly_probability,
-                    "alarm_level": alarm.alarm_level,
-                    "alarm_layer": alarm.alarm_layer,
-                    "metadata": {**existing.metadata, **alarm.metadata},
-                }
+            self._collapse_active_sos_duplicates(
+                device_mac=alarm.device_mac,
+                keep_alarm_id=self._alarms[existing_index].id,
             )
-            self._alarms[existing_index] = updated
-            self._queue.remove(existing.id)
-            self._queue.enqueue(updated)
-            return updated
+            # Repeated SOS packets from the same active event should not emit
+            # another queue item or trigger another popup on clients.
+            return None
 
         self._alarms.append(alarm)
         self._queue.enqueue(alarm)
@@ -94,9 +88,20 @@ class AlarmService:
                 continue
             if existing.device_mac != alarm.device_mac or existing.acknowledged:
                 continue
-            # Only dedupe within a short SOS window; outside window create a new alarm id
-            # so community/family clients can receive a fresh alert event.
-            if alarm.created_at - existing.created_at <= self._sos_dedupe_window:
-                return index
-            return None
+            # Treat an unacknowledged SOS as one active emergency session until
+            # it is acknowledged. Repeated bracelet broadcasts during that
+            # window should reuse the same active alarm instead of spawning new
+            # popup events.
+            return index
         return None
+
+    def _collapse_active_sos_duplicates(self, *, device_mac: str, keep_alarm_id: str) -> None:
+        for index, existing in enumerate(self._alarms):
+            if existing.id == keep_alarm_id:
+                continue
+            if existing.alarm_type.value != "sos":
+                continue
+            if existing.device_mac != device_mac or existing.acknowledged:
+                continue
+            self._alarms[index] = existing.model_copy(update={"acknowledged": True})
+            self._queue.remove(existing.id)

@@ -14,12 +14,13 @@ import 'features/voice/repositories/voice_repository.dart';
 import 'features/voice/providers/voice_provider.dart';
 import 'features/care/providers/care_provider.dart';
 import 'features/care/repositories/care_repository.dart';
-import 'features/care/screens/family_home_screen.dart';
 import 'features/care/screens/elder_home_screen.dart';
+import 'features/care/screens/family_home_screen.dart';
 import 'features/health/repositories/health_repository.dart';
 import 'features/session/services/session_manager.dart';
 import 'features/agent/repositories/agent_repository.dart';
 import 'features/agent/providers/agent_provider.dart';
+import 'core/services/audio_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +85,10 @@ class AppBootstrap extends StatelessWidget {
         ProxyProvider<ApiClient, AgentRepository>(
           update: (_, client, __) => AgentRepository(client),
         ),
+        Provider<AudioService>(
+          create: (_) => AudioService(),
+          dispose: (_, service) => service.dispose(),
+        ),
         ChangeNotifierProxyProvider2<AuthRepository, SessionManager, AuthProvider>(
           create: (context) => AuthProvider(
             context.read<AuthRepository>(),
@@ -92,17 +97,27 @@ class AppBootstrap extends StatelessWidget {
           update: (context, authRepo, session, prevAuth) =>
               prevAuth ?? AuthProvider(authRepo, session),
         ),
-        ChangeNotifierProxyProvider<CareRepository, CareProvider>(
-          create: (context) => CareProvider(context.read<CareRepository>()),
-          update: (context, repo, prev) => prev ?? CareProvider(repo),
+        ChangeNotifierProxyProvider2<CareRepository, SessionManager, CareProvider>(
+          create: (context) => CareProvider(
+            context.read<CareRepository>(),
+            context.read<SessionManager>(),
+          ),
+          update: (context, repo, session, prev) {
+            final provider = prev ?? CareProvider(repo, session);
+            provider.updateDependencies(repo, session);
+            return provider;
+          },
         ),
         ChangeNotifierProxyProvider<AlarmRepository, AlarmProvider>(
           create: (context) => AlarmProvider(context.read<AlarmRepository>()),
           update: (context, repo, prev) => prev ?? AlarmProvider(repo),
         ),
-        ChangeNotifierProxyProvider<VoiceRepository, VoiceProvider>(
-          create: (context) => VoiceProvider(context.read<VoiceRepository>()),
-          update: (context, repo, prev) => prev ?? VoiceProvider(repo),
+        ChangeNotifierProxyProvider2<VoiceRepository, AudioService, VoiceProvider>(
+          create: (context) => VoiceProvider(
+            context.read<VoiceRepository>(),
+            context.read<AudioService>(),
+          ),
+          update: (context, repo, audio, prev) => prev ?? VoiceProvider(repo, audio),
         ),
         ChangeNotifierProxyProvider<AgentRepository, AgentProvider>(
           create: (context) => AgentProvider(context.read<AgentRepository>()),
@@ -122,10 +137,65 @@ class AiHealthApp extends StatefulWidget {
 }
 
 class _AiHealthAppState extends State<AiHealthApp> {
+  AuthProvider? _authProvider;
+  AlarmProvider? _alarmProvider;
+  bool _didScheduleSessionCheck = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<AuthProvider>().checkSession());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authProvider = context.read<AuthProvider>();
+    _alarmProvider ??= context.read<AlarmProvider>();
+    if (!identical(_authProvider, authProvider)) {
+      _authProvider?.removeListener(_handleAuthChanged);
+      _authProvider = authProvider;
+      _authProvider?.addListener(_handleAuthChanged);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleAuthChanged());
+    }
+    if (!_didScheduleSessionCheck && _authProvider != null) {
+      _didScheduleSessionCheck = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _authProvider?.checkSession();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _authProvider?.removeListener(_handleAuthChanged);
+    super.dispose();
+  }
+
+  void _handleAuthChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final authProvider = _authProvider;
+    if (authProvider == null) {
+      return;
+    }
+
+    final alarmProvider = _alarmProvider;
+    if (alarmProvider == null) {
+      return;
+    }
+
+    final role = authProvider.user?.role.toLowerCase();
+    final shouldListenForAlarms =
+        authProvider.status == AuthStatus.authenticated && role != 'elder';
+
+    if (shouldListenForAlarms) {
+      alarmProvider.ensureStarted();
+      return;
+    }
+
+    alarmProvider.reset();
   }
 
   @override

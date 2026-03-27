@@ -159,34 +159,39 @@ watch(
 
 .agent-markdown :deep(table) {
   width: 100%;
-  min-width: 620px;
-  border-collapse: collapse;
+  margin: 1.5rem 0;
+  border-collapse: separate;
   border-spacing: 0;
-  background: rgba(12, 18, 32, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.14);
-  border-radius: 1rem;
+  background: rgba(12, 18, 32, 0.4);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
   overflow: hidden;
-}
-
-.agent-markdown :deep(th),
-.agent-markdown :deep(td) {
-  padding: 0.82rem 0.9rem;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.10);
-  border-right: 1px solid rgba(56, 189, 248, 0.08);
-  text-align: left;
-  vertical-align: top;
-  white-space: normal;
-}
-
-.agent-markdown :deep(th:last-child),
-.agent-markdown :deep(td:last-child) {
-  border-right: 0;
+  font-size: 0.92rem;
 }
 
 .agent-markdown :deep(thead th) {
-  background: rgba(34, 211, 238, 0.08);
+  background: rgba(34, 211, 238, 0.12);
   color: #22d3ee;
-  font-weight: 700;
+  font-weight: 600;
+  text-align: left;
+  padding: 1rem;
+  border-bottom: 2px solid rgba(34, 211, 238, 0.2);
+  white-space: nowrap;
+}
+
+.agent-markdown :deep(td) {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.agent-markdown :deep(tr:nth-child(even)) {
+  background: rgba(56, 189, 248, 0.03);
+}
+
+.agent-markdown :deep(tr:hover) {
+  background: rgba(34, 211, 238, 0.06);
 }
 
 .agent-markdown :deep(tr:last-child td) {

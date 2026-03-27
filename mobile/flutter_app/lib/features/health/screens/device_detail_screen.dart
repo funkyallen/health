@@ -1,11 +1,13 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/health_provider.dart';
-import '../repositories/health_repository.dart';
-import '../providers/history_provider.dart';
-import 'history_screen.dart';
-import 'package:fl_chart/fl_chart.dart';
+
 import '../../../widgets/logout_action.dart';
+import '../models/health_model.dart';
+import '../providers/health_provider.dart';
+import '../providers/history_provider.dart';
+import '../repositories/health_repository.dart';
+import 'history_screen.dart';
 
 class DeviceDetailScreen extends StatefulWidget {
   final String deviceMac;
@@ -32,6 +34,12 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     return (systolic, diastolic);
   }
 
+  String _formatNumber(num? value, {int fractionDigits = 0}) {
+    if (value == null) return '--';
+    if (fractionDigits == 0) return value.toInt().toString();
+    return value.toStringAsFixed(fractionDigits);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +55,10 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF08161B),
       appBar: AppBar(
-        title: Text('实时监测: ${widget.deviceMac}', style: const TextStyle(color: Colors.white, fontSize: 16)),
+        title: Text(
+          '实时监测: ${widget.deviceMac}',
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -141,21 +152,24 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color: Colors.redAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   children: [
                     Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
                     SizedBox(width: 12),
-                    Text('紧急求助 (SOS) 触发中', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    Text(
+                      '紧急求助（SOS）已触发',
+                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
             ),
           const SizedBox(height: 24),
-          const Text('数据每秒自动更新', style: TextStyle(color: Colors.white10, fontSize: 12)),
+          const Text('实时数据会自动刷新，没有新包时会保留最近一次有效样本', style: TextStyle(color: Colors.white24, fontSize: 12)),
         ],
       ),
     );
@@ -192,30 +206,30 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     );
   }
 
-  Widget _buildCompactMetrics(dynamic data) {
+  Widget _buildCompactMetrics(HealthData data) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       alignment: WrapAlignment.spaceEvenly,
       children: [
-        _buildChip(Icons.favorite, '心率', '${data.heartRate?.toInt() ?? "--"}', 'bpm', Colors.redAccent),
-        _buildChip(Icons.water_drop, '血氧', '${data.bloodOxygen?.toInt() ?? "--"}', '%', Colors.blueAccent),
+        _buildChip(Icons.favorite, '心率', _formatNumber(data.heartRate), 'bpm', Colors.redAccent),
+        _buildChip(Icons.water_drop, '血氧', _formatNumber(data.bloodOxygen), '%', Colors.blueAccent),
         _buildChip(Icons.speed, '血压', data.bloodPressure ?? '--', 'mmHg', Colors.purpleAccent),
-        _buildChip(Icons.thermostat, '体温', '${data.temperature ?? "--"}', '°C', Colors.orangeAccent),
-        _buildChip(Icons.directions_walk, '步数', '${data.steps ?? "--"}', '步', Colors.greenAccent),
-        _buildChip(Icons.battery_charging_full, '电量', '${data.battery ?? "--"}', '%', Colors.tealAccent),
+        _buildChip(Icons.thermostat, '体温', _formatNumber(data.temperature, fractionDigits: 1), '°C', Colors.orangeAccent),
+        _buildChip(Icons.directions_walk, '步数', _formatNumber(data.steps), '步', Colors.greenAccent),
+        _buildChip(Icons.battery_charging_full, '电量', _formatNumber(data.battery), '%', Colors.tealAccent),
       ],
     );
   }
 
   Widget _buildChip(IconData icon, String label, String value, String unit, Color color) {
     return Container(
-      width: (MediaQuery.of(context).size.width - 48) / 3, // 3 column layout
+      width: (MediaQuery.of(context).size.width - 48) / 3,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -241,13 +255,13 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                   child: Text(unit, style: const TextStyle(color: Colors.white30, fontSize: 9)),
                 ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFourRealtimeCharts(List<dynamic> history) {
+  Widget _buildFourRealtimeCharts(List<HealthData> history) {
     if (history.isEmpty) return const SizedBox.shrink();
 
     final hrSpots = <FlSpot>[];
@@ -258,11 +272,17 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
 
     for (int i = 0; i < history.length; i++) {
       final item = history[i];
-      if (item.heartRate != null && item.heartRate! > 0) hrSpots.add(FlSpot(i.toDouble(), item.heartRate!.toDouble()));
-      if (item.bloodOxygen != null && item.bloodOxygen! > 0) boSpots.add(FlSpot(i.toDouble(), item.bloodOxygen!.toDouble()));
-      if (item.temperature != null && item.temperature! > 0) tempSpots.add(FlSpot(i.toDouble(), item.temperature!.toDouble()));
+      if (item.heartRate != null && item.heartRate! > 0) {
+        hrSpots.add(FlSpot(i.toDouble(), item.heartRate!.toDouble()));
+      }
+      if (item.bloodOxygen != null && item.bloodOxygen! > 0) {
+        boSpots.add(FlSpot(i.toDouble(), item.bloodOxygen!.toDouble()));
+      }
+      if (item.temperature != null && item.temperature! > 0) {
+        tempSpots.add(FlSpot(i.toDouble(), item.temperature!.toDouble()));
+      }
 
-      final (sbp, dbp) = _parseBloodPressure(item.bloodPressure as String?);
+      final (sbp, dbp) = _parseBloodPressure(item.bloodPressure);
       if (sbp != null) sbpSpots.add(FlSpot(i.toDouble(), sbp));
       if (dbp != null) dbpSpots.add(FlSpot(i.toDouble(), dbp));
     }
@@ -273,7 +293,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
         const SizedBox(height: 16),
         _buildSingleChart('血氧曲线', boSpots, Colors.blueAccent, 80, 100, '%'),
         const SizedBox(height: 16),
-        _buildDoubleChart('血压曲线 (收缩/舒张)', sbpSpots, dbpSpots, Colors.purpleAccent, Colors.deepPurpleAccent, 40, 200, 'mmHg'),
+        _buildDoubleChart('血压曲线（收缩/舒张）', sbpSpots, dbpSpots, Colors.purpleAccent, Colors.deepPurpleAccent, 40, 200, 'mmHg'),
         const SizedBox(height: 16),
         _buildSingleChart('体温曲线', tempSpots, Colors.orangeAccent, 35, 42, '°C'),
       ],
@@ -284,7 +304,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     return _buildChartWrapper(
       title: title,
       chart: spots.length < 2
-          ? _buildChartEmptyState('等待更多$unit数据点...')
+          ? _buildChartEmptyState('等待更多 $unit 数据点...')
           : LineChart(
               LineChartData(
                 minY: minY,
@@ -292,7 +312,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withValues(alpha: 0.05), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   show: true,
@@ -319,7 +339,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                     barWidth: 2,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: color.withOpacity(0.1)),
+                    belowBarData: BarAreaData(show: true, color: color.withValues(alpha: 0.1)),
                   ),
                 ],
               ),
@@ -327,11 +347,20 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     );
   }
 
-  Widget _buildDoubleChart(String title, List<FlSpot> spots1, List<FlSpot> spots2, Color color1, Color color2, double minY, double maxY, String unit) {
+  Widget _buildDoubleChart(
+    String title,
+    List<FlSpot> spots1,
+    List<FlSpot> spots2,
+    Color color1,
+    Color color2,
+    double minY,
+    double maxY,
+    String unit,
+  ) {
     return _buildChartWrapper(
       title: title,
       chart: spots1.length < 2 && spots2.length < 2
-          ? _buildChartEmptyState('等待更多$unit数据点...')
+          ? _buildChartEmptyState('等待更多 $unit 数据点...')
           : LineChart(
               LineChartData(
                 minY: minY,
@@ -339,7 +368,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withValues(alpha: 0.05), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   show: true,
@@ -397,9 +426,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
       height: 180,
       padding: const EdgeInsets.only(top: 12, right: 16, left: 4, bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

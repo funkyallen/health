@@ -78,11 +78,19 @@ const selectedFamily = computed(() =>
 );
 const elderRows = computed<ElderRow[]>(() =>
   elders.value.map((elder) => {
-    const deviceMac = elder.device_macs?.[0] ?? elder.device_mac ?? "";
+    const rawDeviceMac = elder.device_macs?.[0] ?? elder.device_mac ?? "";
+    const deviceRecord = rawDeviceMac
+      ? devices.value.find((device) => device.mac_address === rawDeviceMac) ?? null
+      : null;
+    const exposeDevice =
+      deviceRecord != null
+        ? deviceRecord.ingest_mode === "mock" || deviceRecord.bind_status === "bound"
+        : false;
+    const deviceMac = exposeDevice ? rawDeviceMac : "";
     const sample = deviceMac ? latest.value[deviceMac] ?? null : null;
     const risk = evaluateRisk(
       sample,
-      deviceMac ? (devices.value.find((device) => device.mac_address === deviceMac)?.status ?? "unknown") : "unbound",
+      deviceMac ? (deviceRecord?.status ?? "unknown") : "unbound",
     );
     const familyNames = elder.family_ids
       .map((id) => allFamiliesRaw.value.find((family) => family.id === id)?.name)
@@ -114,8 +122,8 @@ const currentHealthReportSummary = computed<CareHealthReportSummary | null>(() =
   return accessProfile.value.health_reports.find((item) => item.device_mac === selectedDeviceMac.value) ?? null;
 });
 const hasBoundDevice = computed(() => {
-  if (sessionUser.value.role === "family" && accessProfile.value) {
-    return accessProfile.value.binding_state === "bound" && accessProfile.value.capabilities.device_metrics;
+  if (sessionUser.value.role === "family") {
+    return visibleRows.value.some((row) => Boolean(row.deviceMac));
   }
   return Boolean(focusRow.value?.deviceMac);
 });
@@ -128,7 +136,7 @@ const focusTone = computed<DemoTone>(() => {
   return "neutral";
 });
 const focusUpdatedLabel = computed(() =>
-  focusLatest.value ? new Date(focusLatest.value.timestamp).toLocaleString("zh-CN", { hour12: false }) : "尚未同步",
+  displayFocusLatest.value ? new Date(displayFocusLatest.value.timestamp).toLocaleString("zh-CN", { hour12: false }) : "尚未同步",
 );
 const focusSummaryTitle = computed(() => {
   if (!hasBoundDevice.value) return "当前家属还没有绑定设备";
@@ -140,13 +148,13 @@ const focusSummaryTitle = computed(() => {
 });
 const focusSummaryCopy = computed(() => {
   if (!hasBoundDevice.value) {
-    return accessProfile.value?.basic_advice || "请先完成家属与老人、设备之间的绑定，绑定后即可查看实时指标、健康评估和正式报告。";
+    return "当前还没有可用设备，请先确认家属关系和设备绑定状态。";
   }
-  if (!focusLatest.value) {
+  if (!displayFocusLatest.value) {
     return "已识别到绑定关系，但当前设备还没有可用的实时数据。请确认设备在线状态和最近同步情况。";
   }
 
-  const metrics = `心率 ${focusLatest.value.heart_rate} bpm，血氧 ${focusLatest.value.blood_oxygen}%，体温 ${focusLatest.value.temperature.toFixed(1)}°C`;
+  const metrics = `心率 ${displayFocusLatest.value.heart_rate} bpm，血氧 ${displayFocusLatest.value.blood_oxygen}%，体温 ${displayFocusLatest.value.temperature.toFixed(1)}°C`;
 
   if (focusAlarm.value) {
     return `${focusAlarm.value.message}。当前关键指标为 ${metrics}，建议先查看告警升级建议，再决定是否联系社区人员处理。`;
@@ -160,6 +168,8 @@ const focusSummaryCopy = computed(() => {
   return `最近同步指标为 ${metrics}。整体趋势相对平稳，可继续保持日常观察并关注后续波动。`;
 });
 const familyTrendPreview = computed(() => focusTrend.value.slice(-4).reverse());
+const hasRealtimeTrend = computed(() => focusTrend.value.length > 0);
+const displayFocusLatest = computed(() => focusLatest.value ?? focusRow.value?.sample ?? null);
 const familyTrendHeadline = computed(() => {
   if (!familyTrendPreview.value.length) {
     return "选中的设备还没有可展示的趋势片段，后续同步后会在这里展示最近的变化轨迹。";
@@ -178,7 +188,7 @@ const familyTrendHeadline = computed(() => {
   return "最近同步的几个采样点整体波动有限，可以继续结合实时指标与评估结果做判断。";
 });
 const familySnapshotCards = computed<SnapshotMetric[]>(() => {
-  const sample = focusLatest.value;
+  const sample = displayFocusLatest.value;
   return [
     {
       id: "heart-rate",
@@ -264,7 +274,7 @@ const familySnapshotCards = computed<SnapshotMetric[]>(() => {
   ];
 });
 const basicAdvice = computed(
-  () => accessProfile.value?.basic_advice || "请先完成关系绑定与设备绑定，绑定后即可查看照护建议、评估结果和正式报告。",
+  () => "当前还没有可用设备，请先确认家属关系和设备绑定状态。",
 );
 const syncLabel = computed(() =>
   lastSyncAt.value ? lastSyncAt.value.toLocaleTimeString("zh-CN", { hour12: false }) : "尚未同步",
@@ -521,7 +531,7 @@ function updateFamilyId(event: Event) {
               @generate-report="generateHealthReport"
             />
             <AlarmEscalationPanel
-              :sample="focusLatest"
+              :sample="displayFocusLatest"
               :trend="focusTrend"
               :focus-alarm="focusAlarm"
             />
@@ -530,7 +540,6 @@ function updateFamilyId(event: Event) {
 
         <div v-else class="state-block state-empty state-large">
           <strong>当前还没有可用的绑定设备</strong>
-          <p>{{ basicAdvice }}</p>
         </div>
       </article>
 
@@ -539,7 +548,7 @@ function updateFamilyId(event: Event) {
         class="family-agent"
         :device-mac="selectedDeviceMac"
         :subject-name="focusRow?.name ?? '未选择对象'"
-        :sample="focusLatest"
+        :sample="displayFocusLatest"
         :risk-label="focusRiskLabel"
         :focus-alarm="focusAlarm"
         :trend-count="focusTrend.length"
