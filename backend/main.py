@@ -22,8 +22,9 @@ from backend.api.health_api import router as health_router
 from backend.api.relation_api import router as relation_router
 from backend.api.user_api import router as user_router
 from backend.api.voice_api import router as voice_router
+from backend.api.omni_api import router as omni_router
 from backend.config import get_settings
-from backend.models.device_model import DeviceIngestMode
+from backend.models.device_model import DeviceIngestMode, DeviceStatus
 from backend.dependencies import (
     ensure_demo_overlay_history_window,
     get_alarm_service,
@@ -113,6 +114,7 @@ app.include_router(agent_router, prefix=settings.api_v1_prefix)
 app.include_router(chat_router, prefix=settings.api_v1_prefix)
 app.include_router(care_router, prefix=settings.api_v1_prefix)
 app.include_router(voice_router, prefix=settings.api_v1_prefix)
+app.include_router(omni_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 
 
@@ -237,9 +239,13 @@ async def alarm_stream(websocket: WebSocket) -> None:
 
 async def _mock_stream_loop() -> None:
     generator = get_data_generator()
+    device_service = get_device_service()
     while True:
         now = datetime.now(timezone.utc)
         for persona in generator.personas:
+            device = device_service.get_device(persona.mac_address)
+            if device and device.status == DeviceStatus.OFFLINE:
+                continue
             sample = generator.sample_for_device(persona.mac_address, now=now)
             await ingest_sample(sample)
         await asyncio.sleep(settings.mock_push_interval_seconds)
@@ -252,7 +258,11 @@ async def _demo_overlay_stream_loop() -> None:
         if active_mock_macs:
             generator = get_data_generator()
             now = datetime.now(timezone.utc)
+            device_service = get_device_service()
             for mac in active_mock_macs:
+                device = device_service.get_device(mac)
+                if not device or device.status == DeviceStatus.OFFLINE:
+                    continue
                 sample = generator.sample_for_device(mac, now=now)
                 await ingest_sample(sample)
 

@@ -86,12 +86,9 @@ class AgentRepository {
         return;
       }
 
-      final byteStream = _resolveByteStream(data);
-      final textStream = byteStream.transform(utf8.decoder);
-
       var buffer = '';
       var hasYieldedDelta = false;
-      await for (final chunk in textStream) {
+      await for (final chunk in _resolveTextStream(data)) {
         if (chunk.isEmpty) {
           continue;
         }
@@ -140,12 +137,94 @@ class AgentRepository {
     }
   }
 
-  Stream<List<int>> _resolveByteStream(dynamic data) {
+  Stream<String> streamOmniAnalysis(
+    List<int> audioBytes,
+    String? deviceMac, {
+    required String role,
+    String? prompt,
+  }) async* {
+    final endpoint = 'omni/analyze';
+    
+    try {
+      final formData = FormData.fromMap(<String, dynamic>{
+        'file': MultipartFile.fromBytes(
+          audioBytes,
+          filename: 'input.wav',
+        ),
+        'prompt': prompt ?? '请结合我的生命体征数据回答。',
+        'role': role.trim().toLowerCase(),
+        'device_mac': deviceMac?.trim(),
+      });
+
+      // Omni current API in this implementation is not streaming at the model level for simplicity,
+      // but we wrap the response in a stream for UI consistency.
+      final response = await _apiClient.post(
+        endpoint,
+        data: formData,
+      );
+
+      if (response.data == null || response.data['ok'] != true) {
+        yield* _yieldSyntheticChunks('助手暂时无法解析您的语音。');
+        return;
+      }
+
+      final text = response.data['text'] as String? ?? '';
+      yield* _yieldSyntheticChunks(text);
+    } catch (error) {
+      yield* _yieldSyntheticChunks('语音请求失败：$error');
+    }
+  }
+
+  Stream<String> _resolveTextStream(dynamic data) async* {
     if (kIsWeb) {
       final content = data is String ? data : jsonEncode(data);
-      return Stream<List<int>>.value(utf8.encode(content));
+      if (content.isNotEmpty) {
+        yield content;
+      }
+      return;
     }
-    return (data as ResponseBody).stream;
+
+    if (data is String) {
+      if (data.isNotEmpty) {
+        yield data;
+      }
+      return;
+    }
+
+    if (data is List<int>) {
+      if (data.isNotEmpty) {
+        yield utf8.decode(data, allowMalformed: true);
+      }
+      return;
+    }
+
+    if (data is ResponseBody) {
+      await for (final chunk in data.stream) {
+        if (chunk.isEmpty) {
+          continue;
+        }
+        yield utf8.decode(chunk, allowMalformed: true);
+      }
+      return;
+    }
+
+    if (data is Stream) {
+      await for (final chunk in data) {
+        if (chunk is List<int> && chunk.isNotEmpty) {
+          yield utf8.decode(chunk, allowMalformed: true);
+          continue;
+        }
+        if (chunk is String && chunk.isNotEmpty) {
+          yield chunk;
+        }
+      }
+      return;
+    }
+
+    final fallback = jsonEncode(data);
+    if (fallback.isNotEmpty) {
+      yield fallback;
+    }
   }
 
   _ParsedAgentStreamLine? _parseStreamLine(String rawLine) {

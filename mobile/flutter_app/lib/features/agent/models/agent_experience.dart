@@ -52,7 +52,7 @@ class AgentExperience {
       '要不要联系家人？',
     ],
     assistantIcon: Icons.auto_awesome,
-    accent: Color(0xFFFF875A),
+    accent: Color(0xFF2563EB),
   );
 
   static const AgentExperience family = AgentExperience(
@@ -74,6 +74,6 @@ class AgentExperience {
       '结合当前监测数据和告警信息，我下一步应该怎么跟进？',
     ],
     assistantIcon: Icons.shield_outlined,
-    accent: Color(0xFF6FD3FF),
+    accent: Color(0xFF0EA5E9),
   );
 }

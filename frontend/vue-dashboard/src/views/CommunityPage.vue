@@ -40,7 +40,7 @@ const pageMeta = computed(() => [
 <template>
   <section class="page-stack">
     <PageHeader
-      eyebrow="Overview"
+      eyebrow="社区监护态势"
       title="总览监护"
       description="社区页按老人对象展开监护。无设备时只显示绑定状态；只有完成绑定并点进对应老人后，才会显示实时曲线和详细指标。"
       :meta="pageMeta"
@@ -80,7 +80,7 @@ const pageMeta = computed(() => [
         <article class="panel alerts-panel">
           <div class="alerts-panel__head">
             <div>
-              <p class="section-eyebrow">Alert Feed</p>
+              <p class="section-eyebrow">最近告警明细</p>
               <h2>最近告警</h2>
             </div>
             <span class="summary-badge">{{ workspace.recentAlerts.value.length }} 条</span>
@@ -150,8 +150,9 @@ const pageMeta = computed(() => [
 .alert-row {
   padding: 14px 16px;
   border-radius: 20px;
-  background: rgba(12, 20, 34, 0.88);
-  border: 1px solid rgba(56, 189, 248, 0.1);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
   display: grid;
   gap: 6px;
 }

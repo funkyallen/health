@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -7,8 +7,9 @@ import '../models/health_sample.dart';
 
 class ApiService {
   ApiService({
-    this.apiBase = 'http://10.0.2.2:8000/api/v1',
-    this.wsBase = 'ws://10.0.2.2:8000',
+    // Deprecated: use ServerEndpointConfig for dynamic IPs.
+    this.apiBase = 'http://127.0.0.1:8000/api/v1',
+    this.wsBase = 'ws://127.0.0.1:8000',
   });
 
   final String apiBase;

@@ -4,6 +4,7 @@ import '../../care/providers/care_provider.dart';
 import '../models/history_model.dart';
 import '../providers/history_provider.dart';
 import '../../../widgets/logout_action.dart';
+import '../../../core/theme/app_colors.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceMac;
@@ -29,9 +30,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final careProvider = context.watch<CareProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('历史趋势与报告', style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: const Text('历史趋势与报告', style: TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: const [LogoutAction()],
@@ -64,13 +65,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF875A) : Colors.white.withOpacity(0.05),
+          color: isSelected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? const Color(0xFF08161B) : Colors.white70,
+            color: isSelected ? Colors.white : AppColors.textSub,
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -81,7 +83,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildBody(HistoryProvider history, CareProvider care) {
     if (history.status == HistoryLoadStatus.loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF875A)));
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (history.status == HistoryLoadStatus.error) {
@@ -89,8 +91,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(history.errorMessage ?? '加载失败', style: const TextStyle(color: Colors.white70)),
-            TextButton(onPressed: () => history.fetchHistory(), child: const Text('重试')),
+            Text(history.errorMessage ?? '加载失败', style: const TextStyle(color: AppColors.textSub, fontWeight: FontWeight.bold)),
+            TextButton(onPressed: () => history.fetchHistory(), child: const Text('重试', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))),
           ],
         ),
       );
@@ -112,19 +114,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         Container(
           height: 120,
           width: double.infinity,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
           ),
           child: points.isEmpty
-              ? const Center(child: Text('暂无趋势数据', style: TextStyle(color: Colors.white10)))
-              : CustomPaint(painter: SparklinePainter(points.map((e) => e.value).toList())),
+              ? const Center(child: Text('暂无趋势数据', style: TextStyle(color: AppColors.textMuted)))
+              : CustomPaint(painter: SparklinePainter(points.map((e) => e.value).toList(), color: AppColors.primary)),
         ),
       ],
     );
@@ -134,10 +137,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('数据概览', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text('数据概览', style: TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         if (buckets.isEmpty)
-          const Text('暂无历史记录', style: TextStyle(color: Colors.white10))
+          const Text('暂无历史记录', style: TextStyle(color: AppColors.textMuted))
         else
           ...buckets.map((b) => _buildHistoryItem(b)),
       ],
@@ -149,7 +152,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -157,7 +161,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             flex: 2,
             child: Text(
               _formatBucketTime(bucket.bucketStart),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: AppColors.textSub, fontSize: 12),
             ),
           ),
           Expanded(
@@ -167,7 +171,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: _buildBadge('步数', '${bucket.steps}'),
           ),
           Expanded(
-            child: _buildBadge('SOS', '${bucket.sosCount}', color: bucket.sosCount > 0 ? Colors.redAccent : null),
+            child: _buildBadge('SOS', '${bucket.sosCount}', color: bucket.sosCount > 0 ? AppColors.error : null),
           ),
         ],
       ),
@@ -186,8 +190,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildBadge(String label, String value, {Color? color}) {
     return Column(
       children: [
-        Text(value, style: TextStyle(color: color ?? Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-        Text(label, style: const TextStyle(color: Colors.white24, fontSize: 10)),
+        Text(value, style: TextStyle(color: color ?? AppColors.textMain, fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
       ],
     );
   }
@@ -196,17 +200,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('健康报告摘要', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text('健康报告摘要', style: TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         if (reports.isEmpty)
-          const Text('暂无专业报告', style: TextStyle(color: Colors.white10))
+          const Text('暂无专业报告', style: TextStyle(color: AppColors.textMuted))
         else
           ...reports.map((r) => Card(
-            color: Colors.white.withOpacity(0.03),
+            color: AppColors.surface,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.border)),
             child: ListTile(
-              title: Text(r.title, style: const TextStyle(color: Colors.white, fontSize: 14)),
-              subtitle: Text(r.createdAt, style: const TextStyle(color: Colors.white24, fontSize: 11)),
-              trailing: const Icon(Icons.description_outlined, color: Colors.white24),
+              title: Text(r.title, style: const TextStyle(color: AppColors.textMain, fontSize: 14, fontWeight: FontWeight.bold)),
+              subtitle: Text(r.createdAt, style: const TextStyle(color: AppColors.textSub, fontSize: 11)),
+              trailing: const Icon(Icons.description_outlined, color: AppColors.primary),
             ),
           )),
       ],
@@ -216,14 +222,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 class SparklinePainter extends CustomPainter {
   final List<double> values;
-  SparklinePainter(this.values);
+  final Color color;
+  SparklinePainter(this.values, {required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     if (values.length < 2) return;
 
     final paint = Paint()
-      ..color = const Color(0xFFFF875A)
+      ..color = color
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

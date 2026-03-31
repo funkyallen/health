@@ -58,7 +58,7 @@ function submitFreeChat() {
   <section class="agent-page">
     <header class="agent-header">
       <div class="agent-header__copy">
-        <span class="eyebrow">COMMUNITY AGENT</span>
+        <span class="eyebrow">社区智能体</span>
         <h1>社区智能体工作台</h1>
         <p>围绕单个老人或整个社区，直接发起真实分析、图表整理、报告生成和综合建议。</p>
       </div>
@@ -311,11 +311,9 @@ function submitFreeChat() {
   gap: 18px;
   padding: 22px;
   border-radius: 34px;
-  background:
-    linear-gradient(180deg, rgba(13, 20, 36, 0.98), rgba(9, 14, 26, 0.99)),
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 38%);
-  border: 1px solid rgba(56, 189, 248, 0.12);
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.40);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
 }
 
 .agent-sidebar {
@@ -389,7 +387,7 @@ function submitFreeChat() {
 .agent-toggle-group {
   border-radius: 999px;
   padding: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f1f5f9;
 }
 
 .agent-toggle {
@@ -398,16 +396,16 @@ function submitFreeChat() {
   border-radius: 999px;
   padding: 12px 18px;
   background: transparent;
-  color: rgba(110, 168, 200, 0.8);
+  color: var(--text-sub);
   font-weight: 700;
   cursor: pointer;
   transition: all 180ms ease;
 }
 
 .agent-toggle--active {
-  background: rgba(34, 211, 238, 0.15);
-  color: #22d3ee;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  background: #ffffff;
+  color: var(--brand);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .agent-select {
@@ -430,8 +428,8 @@ function submitFreeChat() {
   min-height: 48px;
   padding: 0 14px;
   border-radius: 16px;
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  background: rgba(15, 22, 40, 0.90);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
   color: var(--text-main);
 }
 
@@ -522,7 +520,7 @@ function submitFreeChat() {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: rgba(15, 23, 42, 0.08);
+  background: #f1f5f9;
   color: var(--text-main);
   font-size: 0.85rem;
 }
@@ -530,23 +528,23 @@ function submitFreeChat() {
 .agent-message__bubble {
   padding: 18px 20px;
   border-radius: 26px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid var(--line-medium);
 }
 
 .agent-message__bubble[data-role="assistant"] {
-  background: rgba(15, 22, 40, 0.96);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.20);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .agent-message__bubble[data-role="assistant"][data-status="streaming"] {
-  border-color: rgba(34, 211, 238, 0.28);
+  border-color: var(--brand);
 }
 
 .agent-message__bubble[data-role="user"] {
-  background: rgba(34, 211, 238, 0.12);
-  color: #e2f0ff;
-  border-color: rgba(34, 211, 238, 0.20);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.20);
+  background: #eff6ff;
+  color: var(--text-main);
+  border-color: rgba(37, 99, 235, 0.15);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.06);
 }
 
 .agent-message__bubble p {
@@ -564,18 +562,18 @@ function submitFreeChat() {
   padding: 18px;
   margin-top: 8px;
   border-radius: 28px;
-  border: 1px solid rgba(56, 189, 248, 0.14);
-  background: rgba(13, 20, 36, 0.94);
+  border: 1px solid var(--line-medium);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
 }
 
 .agent-quick-pill,
 .agent-suggestion-chip {
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  border: 1px solid var(--line-medium);
   border-radius: 999px;
   padding: 10px 14px;
-  background: rgba(34, 211, 238, 0.06);
-  color: #a8d8f0;
+  background: #f8fafc;
+  color: var(--text-sub);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -586,8 +584,9 @@ function submitFreeChat() {
 .agent-quick-pill:hover,
 .agent-suggestion-chip:hover {
   transform: translateY(-1px);
-  border-color: rgba(34, 211, 238, 0.32);
-  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--brand);
+  background: #eff6ff;
+  color: var(--brand);
 }
 
 .agent-composer__field textarea {
@@ -595,13 +594,13 @@ function submitFreeChat() {
   min-height: 168px;
   resize: vertical;
   border-radius: 28px;
-  border: 1px solid rgba(56, 189, 248, 0.16);
-  background: rgba(10, 16, 30, 0.96);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
   color: var(--text-main);
   padding: 22px 24px;
   font: inherit;
   line-height: 1.8;
-  box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.04);
+  box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 
 .agent-composer__footer {

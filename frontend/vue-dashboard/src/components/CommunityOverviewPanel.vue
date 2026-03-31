@@ -14,7 +14,7 @@ const clusters = computed(() => ({
   <section class="surface local-panel">
     <div class="local-head">
       <div>
-        <p class="label">Overview</p>
+        <p class="label">状态概览</p>
         <h2>群体态势补充信息</h2>
         <p>用于解释社区整体分层情况，作为总览页的补充说明，而不是替代首屏风险焦点。</p>
       </div>

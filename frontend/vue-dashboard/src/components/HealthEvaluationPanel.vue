@@ -167,7 +167,7 @@ const metricEntries = computed(() => {
     <template v-else>
       <div class="evaluation-hero">
         <article class="evaluation-summary-card">
-          <p class="section-eyebrow">Summary</p>
+          <p class="section-eyebrow">评估总结</p>
           <h3>{{ subjectName || "待选择" }}</h3>
           <p class="report-summary">{{ reportSummaryText }}</p>
           <div class="evaluation-tags">

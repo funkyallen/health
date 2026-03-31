@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import re
 from uuid import uuid4
 
 from backend.config import Settings
@@ -14,21 +13,6 @@ from backend.services.device_service import DeviceService
 from backend.services.relation_service import RelationService
 from backend.services.user_service import UserService
 
-
-ELDER_NAME_POOL = [
-    "王秀英",
-    "李建国",
-    "张桂兰",
-    "陈德福",
-    "刘春梅",
-    "赵志强",
-    "黄玉兰",
-    "周永顺",
-    "吴淑芬",
-    "郑国华",
-    "孙美玲",
-    "冯桂芝",
-]
 
 RELATIONSHIP_POOL = ["女儿", "儿子", "配偶", "外孙女", "外孙", "亲属"]
 
@@ -48,6 +32,47 @@ class AccountRecord:
     username: str
     password: str
     user: SessionUser
+
+
+@dataclass(frozen=True, slots=True)
+class DemoFamilySeed:
+    id: str
+    name: str
+    login_username: str
+
+
+@dataclass(frozen=True, slots=True)
+class DemoElderSeed:
+    id: str
+    login_username: str
+    name: str
+    apartment: str
+    family_id: str
+    receives_mock_device: bool
+
+
+DEMO_FAMILY_SEEDS = [
+    DemoFamilySeed(id="family01", name="家属 01", login_username="family01"),
+    DemoFamilySeed(id="family02", name="家属 02", login_username="family02"),
+    DemoFamilySeed(id="family03", name="家属 03", login_username="family03"),
+    DemoFamilySeed(id="family04", name="家属 04", login_username="family04"),
+    DemoFamilySeed(id="family05", name="家属 05", login_username="family05"),
+    DemoFamilySeed(id="family06", name="家属 06", login_username="family06"),
+]
+
+DEMO_ELDER_SEEDS = [
+    DemoElderSeed(id="elder01_01", login_username="elder01_01", name="王秀英", apartment="1-101", family_id="family01", receives_mock_device=False),
+    DemoElderSeed(id="elder01_02", login_username="elder01_02", name="李建国", apartment="1-102", family_id="family01", receives_mock_device=True),
+    DemoElderSeed(id="elder02_01", login_username="elder02_01", name="张桂兰", apartment="1-103", family_id="family02", receives_mock_device=True),
+    DemoElderSeed(id="elder02_02", login_username="elder02_02", name="陈德福", apartment="2-101", family_id="family02", receives_mock_device=True),
+    DemoElderSeed(id="elder03_01", login_username="elder03_01", name="刘春梅", apartment="2-102", family_id="family03", receives_mock_device=True),
+    DemoElderSeed(id="elder03_02", login_username="elder03_02", name="赵志强", apartment="2-103", family_id="family03", receives_mock_device=True),
+    DemoElderSeed(id="elder04_01", login_username="elder04_01", name="黄玉兰", apartment="3-101", family_id="family04", receives_mock_device=True),
+    DemoElderSeed(id="elder04_02", login_username="elder04_02", name="周永顺", apartment="3-102", family_id="family04", receives_mock_device=True),
+    DemoElderSeed(id="elder05_01", login_username="elder05_01", name="吴淑芬", apartment="3-103", family_id="family05", receives_mock_device=True),
+    DemoElderSeed(id="elder05_02", login_username="elder05_02", name="郑国华", apartment="4-101", family_id="family05", receives_mock_device=True),
+    DemoElderSeed(id="elder06_01", login_username="elder06_01", name="孙美玲", apartment="4-102", family_id="family06", receives_mock_device=True),
+]
 
 
 class CareService:
@@ -209,6 +234,7 @@ class CareService:
             family_id=None,
         )
         records = [AccountRecord(username="community_admin", password=self._settings.seed_default_password, user=community_user)]
+        demo_elder_username_by_id = {seed.id: seed.login_username.lower() for seed in DEMO_ELDER_SEEDS}
         for family in directory.families:
             records.append(
                 AccountRecord(
@@ -224,13 +250,11 @@ class CareService:
                     ),
                 )
             )
-            match = re.search(r"\d+", family.login_username)
-            family_seq = match.group(0) if match else "00"
-            for elder_index, elder_id in enumerate(family.elder_ids, start=1):
+            for elder_id in family.elder_ids:
                 elder = next((item for item in directory.elders if item.id == elder_id), None)
                 if elder is None:
                     continue
-                elder_username = f"elder{family_seq}_{elder_index:02d}"
+                elder_username = demo_elder_username_by_id.get(elder.id, elder.id.lower())
                 records.append(
                     AccountRecord(
                         username=elder_username,
@@ -290,48 +314,49 @@ class CareService:
         return None
 
     def _build_demo_directory(self, devices: list[DeviceRecord]) -> CareDirectory:
-        # mock 设备排前面，serial 设备排后面，各自内部按 MAC 排序
-        # 避免真实手环插入导致人名偏移
         mock_devices = sorted(
             [d for d in devices if str(getattr(d, "ingest_mode", "")) in ("mock", "DeviceIngestMode.MOCK", "")],
             key=lambda item: item.mac_address,
         )
-        serial_devices = sorted(
-            [d for d in devices if str(getattr(d, "ingest_mode", "")) in ("serial", "DeviceIngestMode.SERIAL")],
-            key=lambda item: item.mac_address,
-        )
-        sorted_devices = serial_devices + mock_devices
         community = self._community_profile()
-        elders: list[ElderProfile] = []
-        family_map: dict[str, FamilyProfile] = {}
-
-        for index, device in enumerate(sorted_devices):
-            family_index = index // 2
-            family_id = f"family-{family_index + 1}"
-            if family_id not in family_map:
-                family_map[family_id] = FamilyProfile(
-                    id=family_id,
-                    name=f"家属 {family_index + 1:02d}",
-                    relationship=_pick_from_pool(RELATIONSHIP_POOL, family_index, "relative"),
-                    phone=_build_phone(family_index),
-                    community_id=community.id,
-                    elder_ids=[],
-                    login_username=f"family{family_index + 1:02d}",
-                )
-            elder = ElderProfile(
-                id=f"elder-{index + 1}",
-                name=_pick_from_pool(ELDER_NAME_POOL, index, "Elder"),
-                age=67 + (index % 17),
-                apartment=f"{index // 3 + 1}-{100 + (index % 12)}",
+        family_map = {
+            family.id: FamilyProfile(
+                id=family.id,
+                name=family.name,
+                relationship=_pick_from_pool(RELATIONSHIP_POOL, index, "relative"),
+                phone=_build_phone(index),
                 community_id=community.id,
-                device_mac=device.mac_address,
-                device_macs=[device.mac_address],
-                family_ids=[family_id],
+                elder_ids=[],
+                login_username=family.login_username,
+            )
+            for index, family in enumerate(DEMO_FAMILY_SEEDS)
+        }
+        mock_device_macs = [device.mac_address for device in mock_devices]
+        mock_device_index = 0
+        elders: list[ElderProfile] = []
+        for index, elder_seed in enumerate(DEMO_ELDER_SEEDS):
+            assigned_mac = ""
+            if elder_seed.receives_mock_device and mock_device_index < len(mock_device_macs):
+                assigned_mac = mock_device_macs[mock_device_index]
+                mock_device_index += 1
+            elder = ElderProfile(
+                id=elder_seed.id,
+                name=elder_seed.name,
+                age=67 + (index % 17),
+                apartment=elder_seed.apartment,
+                community_id=community.id,
+                device_mac=assigned_mac,
+                device_macs=[assigned_mac] if assigned_mac else [],
+                family_ids=[elder_seed.family_id],
             )
             elders.append(elder)
-            family_map[family_id].elder_ids.append(elder.id)
+            family_map[elder_seed.family_id].elder_ids.append(elder.id)
 
-        return CareDirectory(community=community, elders=elders, families=list(family_map.values()))
+        return CareDirectory(
+            community=community,
+            elders=elders,
+            families=[family_map[family.id] for family in DEMO_FAMILY_SEEDS],
+        )
 
     @staticmethod
     def _community_profile() -> CommunityProfile:

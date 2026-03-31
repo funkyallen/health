@@ -119,6 +119,13 @@ def test_mock_generator_history_includes_steps() -> None:
         assert all(sample.steps is not None for sample in samples)
 
 
+def test_mock_generator_personas_follow_setup_subject_names() -> None:
+    generator = SyntheticHealthDataGenerator(device_count=3, seed=11)
+
+    assert [persona.display_name for persona in generator.personas] == ["李建国", "张桂兰", "陈德福"]
+    assert [persona.apartment for persona in generator.personas] == ["1-102", "1-103", "2-101"]
+
+
 def test_mock_generator_steps_reset_on_next_day() -> None:
     generator = SyntheticHealthDataGenerator(device_count=1, seed=13)
     mac = generator.personas[0].mac_address

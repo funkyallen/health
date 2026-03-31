@@ -54,6 +54,19 @@ const isPending = computed(() => props.device?.device_status === "pending");
 const isOffline = computed(() => props.device?.device_status === "offline");
 const isAwaitingRealtime = computed(() => !!props.awaitingRealtime && props.device?.ingest_mode === "serial");
 const structuredSummary = computed(() => props.device?.structured_health ?? props.elder?.structured_health ?? null);
+
+const tagGlossary: Record<string, string> = {
+  hypertension: "血压偏高",
+  hypotension: "血压偏低",
+  fever: "体温异常",
+  low_spo2: "血氧偏低",
+  tachycardia: "心率偏高",
+  bradycardia: "心率偏低",
+  arrhythmia: "心律不齐",
+  fall_detected: "跌倒风险"
+};
+const localizeTag = (tag: string) => tagGlossary[tag.toLowerCase()] || tag;
+
 const structuredTags = computed(() => structuredSummary.value?.abnormal_tags ?? []);
 const currentSample = computed(() => props.currentSample ?? props.samples[props.samples.length - 1] ?? null);
 const hasObservedRealtime = computed(() =>
@@ -132,7 +145,7 @@ const metricCards = computed(() => [
   },
   {
     label: "步数",
-    value: currentSample.value?.steps != null ? `${currentSample.value.steps} steps` : "--",
+    value: currentSample.value?.steps != null ? `${currentSample.value.steps} 步` : "--",
     tone: "steps",
   },
 ]);
@@ -244,13 +257,14 @@ function buildChartOption(): RealtimeOption {
       left: 10,
       itemWidth: 18,
       itemHeight: 8,
-      textStyle: { color: "#7eb8d4", fontSize: 13, fontWeight: 600 },
+      textStyle: { color: "#64748b", fontSize: 13, fontWeight: 600 },
     },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(8, 16, 30, 0.96)",
-      borderColor: "rgba(34, 211, 238, 0.24)",
-      textStyle: { color: "#e2f0ff" },
+      backgroundColor: "rgba(255, 255, 255, 0.98)",
+      borderColor: "rgba(15, 23, 42, 0.12)",
+      textStyle: { color: "#0f172a" },
+      extraCssText: "border-radius: 8px; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);",
     },
     grid: [
       { left: "5%", top: 58, width: "41%", height: "29%" },
@@ -263,8 +277,8 @@ function buildChartOption(): RealtimeOption {
       gridIndex: index,
       boundaryGap: false,
       data: chartSeries.value.labels,
-      axisLabel: { color: "#4d7a94", fontSize: 12, margin: 12 },
-      axisLine: { lineStyle: { color: "rgba(56, 189, 248, 0.12)" } },
+      axisLabel: { color: "#64748b", fontSize: 12, margin: 12 },
+      axisLine: { lineStyle: { color: "rgba(15, 23, 42, 0.1)" } },
     })),
     yAxis: [
       {
@@ -272,32 +286,32 @@ function buildChartOption(): RealtimeOption {
         gridIndex: 0,
         min: 40,
         max: 180,
-        splitLine: { lineStyle: { color: "rgba(56, 189, 248, 0.08)" } },
-        axisLabel: { color: "#4d7a94", fontSize: 12 },
+        splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.06)", type: "dashed" } },
+        axisLabel: { color: "#64748b", fontSize: 12 },
       },
       {
         type: "value",
         gridIndex: 1,
         min: 80,
         max: 100,
-        splitLine: { lineStyle: { color: "rgba(56, 189, 248, 0.08)" } },
-        axisLabel: { color: "#4d7a94", fontSize: 12 },
+        splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.06)", type: "dashed" } },
+        axisLabel: { color: "#64748b", fontSize: 12 },
       },
       {
         type: "value",
         gridIndex: 2,
         min: 40,
         max: 200,
-        splitLine: { lineStyle: { color: "rgba(56, 189, 248, 0.08)" } },
-        axisLabel: { color: "#4d7a94", fontSize: 12 },
+        splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.06)", type: "dashed" } },
+        axisLabel: { color: "#64748b", fontSize: 12 },
       },
       {
         type: "value",
         gridIndex: 3,
         min: temperatureAxisRange.value.min,
         max: temperatureAxisRange.value.max,
-        splitLine: { lineStyle: { color: "rgba(56, 189, 248, 0.08)" } },
-        axisLabel: { color: "#4d7a94", fontSize: 12 },
+        splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.06)", type: "dashed" } },
+        axisLabel: { color: "#64748b", fontSize: 12 },
       },
     ],
     series: [
@@ -366,10 +380,10 @@ function buildChartOption(): RealtimeOption {
       },
     ],
     graphic: [
-      { type: "text", left: "23%", top: 24, style: { text: "心率", fill: "#22d3ee", fontWeight: 700, fontSize: 20, align: "center" } },
-      { type: "text", left: "73%", top: 24, style: { text: "血氧", fill: "#22d3ee", fontWeight: 700, fontSize: 20, align: "center" } },
-      { type: "text", left: "23%", top: "52%", style: { text: "血压", fill: "#22d3ee", fontWeight: 700, fontSize: 20, align: "center" } },
-      { type: "text", left: "73%", top: "52%", style: { text: "体温", fill: "#22d3ee", fontWeight: 700, fontSize: 20, align: "center" } },
+      { type: "text", left: "23%", top: 24, style: { text: "心率", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
+      { type: "text", left: "73%", top: 24, style: { text: "血氧", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
+      { type: "text", left: "23%", top: "52%", style: { text: "血压", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
+      { type: "text", left: "73%", top: "52%", style: { text: "体温", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
     ],
   };
 }
@@ -403,7 +417,7 @@ onUnmounted(() => {
   <section class="panel realtime-monitor-panel">
     <div class="monitor-hero">
       <div>
-        <p class="section-eyebrow">Realtime Care View</p>
+        <p class="section-eyebrow">实时监护视图</p>
         <h2>{{ panelMeta.title }}</h2>
         <p class="monitor-subtitle">{{ panelMeta.subtitle }}</p>
       </div>
@@ -422,7 +436,7 @@ onUnmounted(() => {
 
     <div class="monitor-context">
       <div class="monitor-chip-row">
-        <span v-for="tag in structuredTags" :key="tag" class="signal-chip">{{ tag }}</span>
+        <span v-for="tag in structuredTags" :key="tag" class="signal-chip">{{ localizeTag(tag) }}</span>
         <span v-if="!structuredTags.length" class="signal-chip muted">{{ fallbackTag }}</span>
       </div>
       <p class="monitor-note">{{ noteText }}</p>
@@ -444,9 +458,7 @@ onUnmounted(() => {
   width: 100%;
   gap: 18px;
   min-height: calc(100vh - 220px);
-  background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(10, 16, 30, 0.99), rgba(7, 12, 22, 0.99));
+  background: #ffffff;
 }
 
 .monitor-hero,
@@ -466,13 +478,13 @@ onUnmounted(() => {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(2.15rem, 2.8vw, 3rem);
-  color: #e2f0ff;
+  color: var(--text-main);
 }
 
 .monitor-subtitle,
 .monitor-note {
   margin: 8px 0 0;
-  color: rgba(110, 168, 200, 0.85);
+  color: var(--text-sub);
   line-height: 1.7;
   font-size: 1rem;
 }
@@ -485,17 +497,16 @@ onUnmounted(() => {
 .monitor-badge {
   padding: 12px 16px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.15);
-  color: #22d3ee;
-  border: 1px solid rgba(34, 211, 238, 0.24);
+  background: #f8fafc;
+  color: var(--text-main);
+  border: 1px solid var(--line-medium);
   font-size: 0.94rem;
   font-weight: 600;
 }
 
 .monitor-badge.subtle {
-  background: rgba(255, 255, 255, 0.06);
-  color: #a8d8f0;
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  background: #f1f5f9;
+  color: var(--text-sub);
 }
 
 .monitor-metrics {
@@ -507,8 +518,9 @@ onUnmounted(() => {
   min-width: 0;
   padding: 22px 20px;
   border-radius: 20px;
-  background: rgba(13, 20, 38, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.14);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
   display: grid;
   gap: 6px;
   text-align: center;
@@ -516,14 +528,14 @@ onUnmounted(() => {
 }
 
 .metric-plate span {
-  color: rgba(110, 168, 200, 0.95);
-  font-size: 1.2rem;
+  color: var(--text-main);
+  font-size: 1.4rem;
   letter-spacing: 0.05em;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .metric-plate strong {
-  color: #e2f0ff;
+  color: var(--text-main);
   font-size: 2.2rem;
   font-weight: 700;
   line-height: 1.15;
@@ -531,23 +543,23 @@ onUnmounted(() => {
 }
 
 .metric-plate[data-tone="heart"] strong {
-  color: #ff6b7a;
+  color: #ef4444;
 }
 
 .metric-plate[data-tone="spo2"] strong {
-  color: #22d3ee;
+  color: #0ea5e9;
 }
 
 .metric-plate[data-tone="pressure"] strong {
-  color: #a78bfa;
+  color: #8b5cf6;
 }
 
 .metric-plate[data-tone="temp"] strong {
-  color: #fb923c;
+  color: #f59e0b;
 }
 
 .metric-plate[data-tone="steps"] strong {
-  color: #60a5fa;
+  color: #3b82f6;
 }
 
 .monitor-context {
@@ -562,17 +574,17 @@ onUnmounted(() => {
 .signal-chip {
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.1);
-  color: #22d3ee;
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
   font-size: 0.92rem;
   font-weight: 600;
 }
 
 .signal-chip.muted {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(110, 168, 200, 0.6);
-  border: 1px solid rgba(56, 189, 248, 0.08);
+  background: #f8fafc;
+  color: var(--text-sub);
+  border: 1px solid var(--line-medium);
 }
 
 .monitor-chart-shell {
@@ -587,8 +599,8 @@ onUnmounted(() => {
   width: 100%;
   display: block;
   border-radius: 28px;
-  background: rgba(10, 16, 30, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
 }
 
 .monitor-empty {
@@ -599,18 +611,18 @@ onUnmounted(() => {
   gap: 10px;
   padding: 24px;
   text-align: center;
-  background: rgba(10, 16, 30, 0.94);
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 28px;
 }
 
 .monitor-empty strong {
-  color: #e2f0ff;
+  color: var(--text-main);
   font-size: 1.45rem;
 }
 
 .monitor-empty p {
   margin: 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   line-height: 1.7;
   font-size: 1rem;
   max-width: 520px;

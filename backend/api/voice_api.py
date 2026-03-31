@@ -113,6 +113,7 @@ async def voice_status() -> dict:
     return {
         "configured": configured,
         "service_provider": "dashscope" if configured else "none",
+        "provider": "dashscope" if configured else "none",
         "supported_languages": ["zh", "en"] if configured else [],
         "asr_model": _settings.qwen_asr_model_id if configured else None,
         "tts_model": _settings.qwen_tts_model_id if configured else None,

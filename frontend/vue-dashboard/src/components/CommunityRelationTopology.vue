@@ -23,7 +23,7 @@ function isSelectedDevice(id: string) {
   <section class="panel topology-panel">
     <div class="topology-head">
       <div>
-        <p class="section-eyebrow">Relation Topology</p>
+        <p class="section-eyebrow">社交关系图谱</p>
         <h2>社区关系拓扑</h2>
         <p class="topology-subtitle">理清社区、老人、家属和手环之间的归属关系，并突出当前选中的实时监护设备。</p>
       </div>
@@ -113,9 +113,7 @@ function isSelectedDevice(id: string) {
 .topology-panel {
   display: grid;
   gap: 18px;
-  background:
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.10), transparent 30%),
-    linear-gradient(180deg, rgba(15, 22, 40, 0.98), rgba(11, 18, 32, 0.96));
+  background: #ffffff;
 }
 
 .topology-head,
@@ -148,8 +146,9 @@ function isSelectedDevice(id: string) {
   padding: 14px 16px;
   min-width: 220px;
   border-radius: 24px;
-  background: rgba(11, 42, 53, 0.94);
-  color: #f4fbfa;
+  background: #f8fafc;
+  color: var(--text-main);
+  border: 1px solid var(--line-medium);
 }
 
 .topology-community span,
@@ -161,7 +160,7 @@ function isSelectedDevice(id: string) {
 }
 
 .topology-community span {
-  color: rgba(244, 251, 250, 0.62);
+  color: var(--text-sub);
 }
 
 .topology-community strong {
@@ -179,8 +178,9 @@ function isSelectedDevice(id: string) {
   align-items: center;
   padding: 20px;
   border-radius: 28px;
-  background: rgba(13, 22, 38, 0.88);
-  border: 1px solid rgba(56, 189, 248, 0.10);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
   position: relative;
 }
 
@@ -190,7 +190,7 @@ function isSelectedDevice(id: string) {
   position: absolute;
   top: 50%;
   height: 1px;
-  background: linear-gradient(90deg, rgba(17, 138, 178, 0.24), rgba(17, 138, 178, 0.08));
+  background: var(--line-medium);
 }
 
 .topology-lane::before {
@@ -220,8 +220,8 @@ function isSelectedDevice(id: string) {
 .node-core,
 .node-chip {
   border-radius: 22px;
-  border: 1px solid rgba(56, 189, 248, 0.12);
-  background: rgba(16, 24, 44, 0.92);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
   padding: 14px 16px;
   display: grid;
   gap: 4px;
@@ -232,15 +232,17 @@ function isSelectedDevice(id: string) {
   min-width: 220px;
   justify-items: center;
   text-align: center;
-  background: rgba(34, 211, 238, 0.10);
+  background: #f8fafc;
 }
 
 .node-core[data-risk="high"] {
-  background: rgba(248, 113, 113, 0.12);
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .node-core[data-risk="medium"] {
-  background: rgba(251, 146, 60, 0.14);
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .node-chip {
@@ -255,8 +257,9 @@ function isSelectedDevice(id: string) {
 .node-chip--device:hover,
 .node-chip--selected {
   transform: translateY(-1px);
-  border-color: rgba(17, 138, 178, 0.28);
-  box-shadow: 0 12px 24px rgba(11, 42, 53, 0.08);
+  border-color: var(--brand);
+  background: #eff6ff;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.08);
 }
 
 .node-chip strong,
@@ -275,14 +278,15 @@ function isSelectedDevice(id: string) {
 }
 
 .node-chip--ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: #f1f5f9;
+  border-style: dashed;
 }
 
 .orphan-strip {
   display: grid;
   gap: 12px;
   padding-top: 8px;
-  border-top: 1px solid rgba(56, 189, 248, 0.10);
+  border-top: 1px solid var(--line-strong);
 }
 
 .orphan-row {
@@ -293,7 +297,8 @@ function isSelectedDevice(id: string) {
 .topology-empty {
   padding: 20px;
   border-radius: 24px;
-  background: rgba(13, 22, 38, 0.82);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
   color: var(--text-sub);
 }
 

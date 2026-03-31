@@ -50,9 +50,17 @@ class DeviceService:
         with self._lock:
             return list(self._devices.values())
 
+    @staticmethod
+    def _normalize_mac(mac_address: str) -> str:
+        compact = "".join(ch for ch in mac_address if ch.isalnum()).upper()
+        if len(compact) == 12:
+            return ":".join(compact[i : i + 2] for i in range(0, 12, 2))
+        return mac_address.upper()
+
     def get_device(self, mac_address: str) -> DeviceRecord | None:
         with self._lock:
-            return self._devices.get(mac_address.upper())
+            normalized = self._normalize_mac(mac_address)
+            return self._devices.get(normalized)
 
     def get_active_serial_target(self) -> DeviceRecord | None:
         with self._lock:
@@ -399,10 +407,13 @@ class DeviceService:
     @staticmethod
     def _is_demo_elder_user_id(user_id: str) -> bool:
         normalized = user_id.strip().lower()
-        if not normalized.startswith("elder-"):
+        if normalized.startswith("elder-"):
+            return normalized.removeprefix("elder-").isdigit()
+        if not normalized.startswith("elder"):
             return False
-        suffix = normalized.removeprefix("elder-")
-        return suffix.isdigit()
+        suffix = normalized.removeprefix("elder")
+        family_part, separator, elder_part = suffix.partition("_")
+        return bool(separator) and family_part.isdigit() and elder_part.isdigit()
 
     def _initialize_storage(self) -> None:
         with self._connection() as connection:
@@ -527,7 +538,8 @@ class DeviceService:
         if not mac_address:
             self._active_serial_target_mac = None
             return None
-        device = self._devices.get(mac_address.upper())
+        normalized_mac = self._normalize_mac(mac_address)
+        device = self._devices.get(normalized_mac)
         if (
             device is None
             or device.ingest_mode != DeviceIngestMode.SERIAL

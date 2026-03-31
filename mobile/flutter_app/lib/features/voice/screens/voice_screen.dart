@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/voice_provider.dart';
 import '../../../widgets/logout_action.dart';
+import '../../../core/theme/app_colors.dart';
 
 class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
@@ -32,9 +33,9 @@ class _VoiceScreenState extends State<VoiceScreen> {
     final voiceProvider = context.watch<VoiceProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('语音交互', style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: const Text('语音交互', style: TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: const [LogoutAction()],
@@ -45,7 +46,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
 
   Widget _buildBody(VoiceProvider provider) {
     if (provider.status == VoiceLoadStatus.loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF875A)));
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     return SingleChildScrollView(
@@ -71,17 +72,18 @@ class _VoiceScreenState extends State<VoiceScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isConfigured ? Colors.greenAccent.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+          color: isConfigured ? AppColors.success.withOpacity(0.5) : AppColors.error.withOpacity(0.5),
         ),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Row(
         children: [
           Icon(
             isConfigured ? Icons.check_circle : Icons.error_outline,
-            color: isConfigured ? Colors.greenAccent : Colors.redAccent,
+            color: isConfigured ? AppColors.success : AppColors.error,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -90,12 +92,12 @@ class _VoiceScreenState extends State<VoiceScreen> {
               children: [
                 Text(
                   isConfigured ? '语音服务已就绪' : '语音服务未配置',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
                 ),
                 if (isConfigured)
                   Text(
                     '算力提供商: ${provider.voiceStatus?.serviceProvider ?? "默认"}',
-                    style: const TextStyle(color: Colors.white30, fontSize: 12),
+                    style: const TextStyle(color: AppColors.textSub, fontSize: 12),
                   ),
               ],
             ),
@@ -109,7 +111,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('语音转文字 (ASR)', style: TextStyle(color: Colors.white70, fontSize: 14)),
+        const Text('语音转文字 (ASR)', style: TextStyle(color: AppColors.textMain, fontSize: 14, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         Center(
           child: GestureDetector(
@@ -130,7 +132,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                             height: 80 * value,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFFF875A).withOpacity(0.2 * (1.6 - value)),
+                              color: const Color(0xFF2563EB).withOpacity(0.2 * (1.6 - value)),
                             ),
                           );
                         },
@@ -138,15 +140,15 @@ class _VoiceScreenState extends State<VoiceScreen> {
                     CircleAvatar(
                       radius: 40,
                       backgroundColor: provider.isRecording || provider.isProcessing
-                          ? const Color(0xFFFF875A)
-                          : Colors.white10,
+                          ? AppColors.primary
+                          : AppColors.border,
                       child: Icon(
                         provider.isProcessing
                             ? Icons.graphic_eq
                             : (provider.isRecording ? Icons.mic : Icons.mic_none),
                         color: provider.isRecording || provider.isProcessing
-                            ? const Color(0xFF08161B)
-                            : Colors.white70,
+                            ? Colors.white
+                            : AppColors.textMuted,
                         size: 32,
                       ),
                     ),
@@ -158,7 +160,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
                       ? '松开 结束录音'
                       : (provider.isProcessing ? '正在识别...' : '长按 开始录音'),
                   style: TextStyle(
-                    color: provider.isRecording ? const Color(0xFFFF875A) : Colors.white24,
+                    color: provider.isRecording ? AppColors.primary : AppColors.textMuted,
                     fontSize: 12,
                     fontWeight: provider.isRecording ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -173,12 +175,13 @@ class _VoiceScreenState extends State<VoiceScreen> {
             padding: const EdgeInsets.all(16),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: AppColors.primary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.1)),
             ),
             child: Text(
               '识别结果: ${provider.lastAsrText}',
-              style: const TextStyle(color: Color(0xFFFF875A), fontSize: 14),
+              style: const TextStyle(color: AppColors.textMain, fontSize: 14, fontWeight: FontWeight.bold),
             ),
           ),
       ],
@@ -189,17 +192,18 @@ class _VoiceScreenState extends State<VoiceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('文字转语音 (TTS)', style: TextStyle(color: Colors.white70, fontSize: 14)),
+        const Text('文字转语音 (TTS)', style: TextStyle(color: AppColors.textMain, fontSize: 14, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         TextField(
           controller: _ttsController,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: const Color(0xFF0F172A)),
           decoration: InputDecoration(
             hintText: '输入要播报的内容...',
-            hintStyle: const TextStyle(color: Colors.white10),
+            hintStyle: const TextStyle(color: AppColors.textMuted),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.03),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            fillColor: AppColors.surface,
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
           ),
         ),
         const SizedBox(height: 16),
@@ -211,9 +215,10 @@ class _VoiceScreenState extends State<VoiceScreen> {
                 ? null
                 : () => provider.processTts(_ttsController.text),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF875A),
-              foregroundColor: const Color(0xFF08161B),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
             ),
             child: const Text('开始合成并播报', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -223,7 +228,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
             padding: const EdgeInsets.only(top: 12),
             child: Text(
               '音频链接已生成 (由于插件限制不自动播放)',
-              style: TextStyle(color: Colors.greenAccent.withOpacity(0.5), fontSize: 10),
+              style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold),
             ),
           ),
       ],
@@ -235,17 +240,17 @@ class _VoiceScreenState extends State<VoiceScreen> {
       child: Column(
         children: [
           const SizedBox(height: 40),
-          Icon(Icons.voice_over_off, size: 64, color: Colors.white.withOpacity(0.1)),
+          Icon(Icons.voice_over_off, size: 64, color: AppColors.textMuted.withOpacity(0.2)),
           const SizedBox(height: 24),
           const Text(
             '语音服务当前不可用',
-            style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           const Text(
             '后端尚未配置专业 ASR/TTS 算力。您可以继续使用实时监测、历史趋势和告警中心等核心功能。',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white24, fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ],
       ),

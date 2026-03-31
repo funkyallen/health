@@ -141,6 +141,55 @@ class VoiceService:
             return {"ok": False, "text": "", "provider": f"dashscope/{model_id}", "error": str(exc)}
 
     # ------------------------------------------------------------------ #
+    # OMNI (audio -> text answer)                                         #
+    # ------------------------------------------------------------------ #
+    def omni_chat(self, audio_bytes: bytes, *, prompt: str = "请理解这段语音并回答。", fmt: str = "wav") -> dict[str, object]:
+        """Call Qwen-Omni to understand audio and generate text.
+        
+        Returns {"text": str, "provider": str, "ok": bool}.
+        """
+        if not self._configured:
+            return {"ok": False, "text": "", "provider": "none", "error": "DASHSCOPE_API_KEY not configured"}
+
+        model_id = self._settings.qwen_omni_model_id
+        try:
+            import dashscope
+            from dashscope.common.error import DashScopeError
+
+            dashscope.api_key = self._api_key
+            
+            # Using MultiModalConversation for Omni multimodal input
+            messages = [
+                {
+                    "role": "system",
+                    "content": [{"text": "你是一个专业的健康助手。请理解用户的语音输入并给予简明扼要的回答。"}]
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"audio": audio_bytes},
+                        {"text": prompt}
+                    ]
+                }
+            ]
+            
+            response = dashscope.MultiModalConversation.call(
+                model=model_id,
+                messages=messages,
+                stream=False
+            )
+            
+            if response.status_code == 200:
+                answer = response.output.choices[0].message.content[0].get("text", "")
+                return {"ok": True, "text": answer, "provider": f"dashscope/{model_id}"}
+            
+            return {"ok": False, "text": "", "provider": f"dashscope/{model_id}", "error": response.message}
+            
+        except Exception as exc:
+            logger.error("Omni chat failed: %s", exc)
+            return {"ok": False, "text": "", "provider": f"dashscope/{model_id}", "error": str(exc)}
+
+    # ------------------------------------------------------------------ #
     # TTS  (text -> audio)                                                #
     # ------------------------------------------------------------------ #
     def synthesize(

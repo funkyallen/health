@@ -37,33 +37,33 @@
   --slate-800: #1e293b;
   --slate-900: #0f172a;
 
-  /* Semantic tokens */
-  --bg-base:     #0d1117;
-  --bg-alt:      #0f1520;
-  --bg-top:      #0d1117;
-  --bg-bottom:   #080d14;
-  --panel:       rgba(15, 22, 36, 0.94);
-  --panel-strong: rgba(18, 26, 42, 0.99);
-  --panel-tinted: rgba(12, 18, 30, 0.92);
+  /* Semantic tokens (Light/Biorender Theme) */
+  --bg-base:     #f8fafc;
+  --bg-alt:      #f1f5f9;
+  --bg-top:      #ffffff;
+  --bg-bottom:   #f8fafc;
+  --panel:       rgba(255, 255, 255, 0.98);
+  --panel-strong: #ffffff;
+  --panel-tinted: #f8fafc;
 
-  --line:         rgba(56, 189, 248, 0.10);
-  --line-medium:  rgba(56, 189, 248, 0.16);
-  --line-strong:  rgba(34, 211, 238, 0.28);
+  --line:         rgba(15, 23, 42, 0.08);
+  --line-medium:  rgba(15, 23, 42, 0.12);
+  --line-strong:  rgba(15, 23, 42, 0.22);
 
-  --text-main:  #e8f4ff;
-  --text-sub:   #7eb8d4;
-  --text-muted: #4d7a94;
+  --text-main:  #0f172a;
+  --text-sub:   #475569;
+  --text-muted: #94a3b8;
 
-  --brand:      #22d3ee;
-  --brand-2:    #38bdf8;
-  --brand-glow: rgba(34, 211, 238, 0.20);
+  --brand:      #2563eb;
+  --brand-2:    #3b82f6;
+  --brand-glow: rgba(37, 99, 235, 0.15);
 
   --accent:     #f59e0b;
-  --accent-2:   #a78bfa;
+  --accent-2:   #6366f1;
 
-  --risk-high:   #f87171;
-  --risk-medium: #fb923c;
-  --risk-low:    #34d399;
+  --risk-high:   #ef4444;
+  --risk-medium: #f59e0b;
+  --risk-low:    #10b981;
 
   /* Layout */
   --radius-xl: 24px;
@@ -124,10 +124,7 @@ html, body, #app {
 body {
   font-family: var(--font-main);
   color: var(--text-main);
-  background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.06), transparent 28%),
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.06), transparent 24%),
-    linear-gradient(180deg, #0d1117 0%, #080d14 100%);
+  background: var(--bg-base);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
@@ -171,12 +168,10 @@ button, select, input, textarea {
   gap: 16px;
   padding: 20px 16px;
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(7, 20, 29, 0.99), rgba(9, 29, 40, 0.98)),
-    radial-gradient(circle at top, rgba(26, 188, 156, 0.12), transparent 36%);
-  color: rgba(244, 251, 252, 0.96);
-  border: 1px solid rgba(148, 210, 224, 0.14);
-  box-shadow: 0 26px 52px rgba(5, 17, 24, 0.34);
+  background: #ffffff;
+  color: var(--text-main);
+  border: 1px solid var(--line-medium);
+  box-shadow: var(--shadow-sm);
 }
 
 .workspace-sidebar__brand {
@@ -186,17 +181,17 @@ button, select, input, textarea {
 
 .workspace-sidebar__brand h2 {
   margin: 0;
-  color: #f8fdff;
+  color: var(--text-main);
   font-family: var(--font-display);
   font-size: 1.34rem;
 }
 
 .workspace-sidebar__brand .section-eyebrow {
-  color: rgba(133, 239, 223, 0.88);
+  color: var(--brand);
 }
 
 .workspace-sidebar__brand .subtle-copy {
-  color: rgba(211, 232, 238, 0.86);
+  color: var(--text-sub);
 }
 
 .workspace-sidebar__footer {
@@ -327,10 +322,10 @@ button, select, input, textarea {
   gap: 12px;
   align-items: flex-start;
   padding: 14px 16px;
-  border: 1px solid rgba(167, 243, 208, 0.16);
+  border: 1px solid transparent;
   border-radius: 18px;
-  color: rgba(245, 250, 252, 0.98);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-sub);
+  background: transparent;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
@@ -339,17 +334,15 @@ button, select, input, textarea {
 
 .primary-nav__item:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(110, 231, 183, 0.30);
-  color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--bg-alt);
+  color: var(--text-main);
 }
 
 .primary-nav__item.active {
-  background: linear-gradient(135deg, rgba(233, 255, 249, 0.98), rgba(207, 245, 240, 0.98));
-  color: #071c26;
-  border-color: rgba(94, 234, 212, 0.45);
-  box-shadow: 0 14px 28px rgba(5, 17, 24, 0.28);
+  background: var(--brand);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
 }
 
 .primary-nav__copy {
@@ -363,13 +356,13 @@ button, select, input, textarea {
 }
 
 .primary-nav__copy small {
-  color: rgba(221, 235, 240, 0.76);
+  color: var(--text-muted);
   font-size: 0.79rem;
   line-height: 1.5;
 }
 
 .primary-nav__item.active .primary-nav__copy small {
-  color: rgba(7, 28, 38, 0.76);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .tool-entry {

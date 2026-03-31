@@ -155,20 +155,20 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
             if (alarm.deviceMac.isNotEmpty) ...[
               Text(
                 '设备 MAC: ${alarm.deviceMac}',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(color: const Color(0xFF0F172A), fontSize: 16),
               ),
               const SizedBox(height: 8),
             ],
             Text(
               '时间: ${alarm.createdAtDisplay}',
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: const Color(0xFF64748B)),
             ),
             const SizedBox(height: 12),
             Text(
               alarm.message.isNotEmpty
                   ? alarm.message
                   : '老人可能遇到紧急情况，请立即联系或前往处理。',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: const Color(0xFF0F172A)),
             ),
           ],
         ),

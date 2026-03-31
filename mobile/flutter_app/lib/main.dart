@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/network/api_client.dart';
 import 'core/network/server_endpoint_config.dart';
+import 'core/theme/app_colors.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/repositories/auth_repository.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -207,10 +208,85 @@ class _AiHealthAppState extends State<AiHealthApp> {
       title: 'AIoT Health',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF875A),
-          brightness: Brightness.dark,
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
         ),
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
+        fontFamily: 'Inter', // Ensuring modern typography
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          iconTheme: IconThemeData(color: AppColors.textMain),
+          titleTextStyle: TextStyle(
+            color: AppColors.textMain,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.cardBg,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.border, width: 1),
+          ),
+          margin: const EdgeInsets.only(bottom: 16),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: AppColors.surface,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          titleTextStyle: const TextStyle(
+            color: AppColors.textMain,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          contentTextStyle: const TextStyle(
+            color: AppColors.textSub,
+            fontSize: 16,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.surface,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
+          labelStyle: const TextStyle(color: AppColors.textSub),
+          hintStyle: const TextStyle(color: AppColors.textMuted),
+        ),
       ),
       home: GlobalAlarmListener(
         child: _buildHome(context, authStatus),
@@ -221,8 +297,8 @@ class _AiHealthAppState extends State<AiHealthApp> {
   Widget _buildHome(BuildContext context, AuthStatus status) {
     if (status == AuthStatus.initial) {
       return const Scaffold(
-        backgroundColor: Color(0xFF08161B),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFFF875A))),
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF2563EB))),
       );
     }
 

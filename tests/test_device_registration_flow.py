@@ -2,19 +2,24 @@ from __future__ import annotations
 
 import asyncio
 
-from backend.api import device_api
+from backend.api import care_api, device_api
 from backend.models.auth_model import SessionUser
+from backend.config import Settings
 from backend.models.device_model import (
     DeviceBindStatus,
     DeviceIngestMode,
+    DeviceRecord,
     DeviceRegisterRequest,
+    DeviceStatus,
     SerialTargetSwitchRequest,
     ingest_source_matches_mode,
     normalize_and_validate_mac,
 )
 from backend.models.health_model import IngestionSource
 from backend.models.user_model import UserRole
+from backend.services.care_service import CareService
 from backend.services.device_service import DeviceService
+from backend.services.relation_service import RelationService
 from backend.services.user_service import UserService
 
 
@@ -199,6 +204,93 @@ def test_switching_mock_device_as_serial_target_is_rejected(tmp_path) -> None:
         assert str(exc) == "DEVICE_NOT_SERIAL"
     else:
         raise AssertionError("expected switching mock device to fail")
+
+
+def test_demo_directory_strictly_matches_setup_account_layout(tmp_path) -> None:
+    user_service = UserService()
+    device_service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'care-demo.db').as_posix()}",
+    )
+    relation_service = RelationService(user_service)
+    care_service = CareService(device_service, user_service, relation_service, Settings())
+
+    first_mock_device = DeviceRecord(
+        mac_address="53:57:08:00:00:06",
+        device_name="T10-WATCH",
+        ingest_mode=DeviceIngestMode.MOCK,
+        status=DeviceStatus.ONLINE,
+    )
+    mock_device = DeviceRecord(
+        mac_address="53:57:08:00:00:07",
+        device_name="T10-WATCH",
+        ingest_mode=DeviceIngestMode.MOCK,
+        status=DeviceStatus.ONLINE,
+    )
+    serial_device = DeviceRecord(
+        mac_address="76:81:EE:EC:66:88",
+        device_name="T10-WATCH-REAL",
+        ingest_mode=DeviceIngestMode.SERIAL,
+        status=DeviceStatus.ONLINE,
+    )
+    device_service.seed_devices([serial_device, mock_device, first_mock_device])
+
+    directory = care_service.get_demo_directory()
+    accounts = care_service.list_auth_accounts()
+    family01 = next((family for family in directory.families if family.login_username == "family01"), None)
+    wang_xiuying = next((elder for elder in directory.elders if elder.name == "王秀英"), None)
+    li_jianguo = next((elder for elder in directory.elders if elder.name == "李建国"), None)
+
+    assert [account.username for account in accounts[:4]] == [
+        "community_admin",
+        "family01",
+        "elder01_01",
+        "elder01_02",
+    ]
+    assert family01 is not None
+    assert family01.id == "family01"
+    assert family01.elder_ids == ["elder01_01", "elder01_02"]
+    assert wang_xiuying is not None
+    assert wang_xiuying.id == "elder01_01"
+    assert li_jianguo is not None
+    assert li_jianguo.id == "elder01_02"
+    assert wang_xiuying.device_macs == []
+    assert li_jianguo.device_mac == first_mock_device.mac_address
+    assert serial_device.mac_address not in li_jianguo.device_macs
+
+
+def test_demo_bound_serial_device_uses_demo_elder_mapping_in_metrics(monkeypatch, tmp_path) -> None:
+    user_service = UserService()
+    device_service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'care-demo-metrics.db').as_posix()}",
+    )
+    relation_service = RelationService(user_service)
+    care_service = CareService(device_service, user_service, relation_service, Settings())
+    bound_serial = DeviceRecord(
+        mac_address="76:81:EE:EC:66:88",
+        device_name="T10-WATCH-REAL",
+        ingest_mode=DeviceIngestMode.SERIAL,
+        status=DeviceStatus.ONLINE,
+        bind_status=DeviceBindStatus.BOUND,
+        user_id="elder01_01",
+    )
+
+    monkeypatch.setattr(care_api, "get_user_service", lambda: user_service)
+    monkeypatch.setattr(care_api, "get_care_service", lambda: care_service)
+    monkeypatch.setattr(care_api, "get_display_latest_sample", lambda *_args, **_kwargs: None)
+
+    metrics = care_api._device_metrics([bound_serial])
+
+    assert len(metrics) == 1
+    assert metrics[0].elder_id == "elder01_01"
+    assert metrics[0].elder_name == "王秀英"
+
+
+def test_demo_elder_account_ids_are_valid_binding_targets() -> None:
+    assert DeviceService._is_demo_elder_user_id("elder01_01") is True
+    assert DeviceService._is_demo_elder_user_id("elder06_01") is True
+    assert DeviceService._is_demo_elder_user_id("family01") is False
 
 
 def test_serial_target_switch_api_returns_new_target(monkeypatch, tmp_path) -> None:

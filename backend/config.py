@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     qwen_rerank_model: str = ""
     qwen_asr_model: str = ""
     qwen_tts_model: str = ""
+    qwen_omni_model: str = ""
     qwen_tts_voice: str = ""
     qwen_rerank_api: str = ""
     qwen_enable_rerank: bool = False
@@ -294,7 +295,7 @@ class Settings(BaseSettings):
 
     @property
     def qwen_llm_configured(self) -> bool:
-        return bool(self.qwen_api_key.strip() and self._normalize_qwen_model(self.qwen_model))
+        return bool(self.dashscope_api_key.strip() and (self._normalize_qwen_model(self.qwen_model) or self.qwen_omni_model.strip()))
 
     @property
     def qwen_missing_config_fields(self) -> list[str]:
@@ -331,11 +332,13 @@ class Settings(BaseSettings):
         if not raw:
             return "qwen3-asr-flash-realtime-2026-02-10"
         v = raw.lower()
-        if v in {"qwen3-asr-flash", "qwen3-asr", "qwen-asr", "qwen3-asr-flash-realtime"}:
-            return "qwen3-asr-flash-realtime-2026-02-10"
-        if v == "qwen3-asr-flash-realtime":
+        if v in {"qwen3-asr-flash", "qwen3-asr", "qwen-asr", "qwen3-asr-flash-realtime", "qwen-omni"}:
             return "qwen3-asr-flash-realtime-2026-02-10"
         return v
+
+    @property
+    def qwen_omni_model_id(self) -> str:
+        return self.qwen_omni_model.strip() or "qwen-omni"
 
     @property
     def qwen_tts_model_name(self) -> str:

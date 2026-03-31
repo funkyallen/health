@@ -505,7 +505,7 @@ flutter run -d <device_id>
 | --- | --- | --- | --- | --- | --- |
 | `community_admin` | 社区端 | 社区管理员 | `123456` | - | 社区总入口 |
 | `family01` | 家庭端 | 家属 01 | `123456` | `family01` | 绑定对应虚拟设备组，登录后实时显示 mock data |
-| `elder01_01` | 老人端 | 王秀英 | `123456` | `family01` | 与 `family01` 联动，登录后实时显示 mock data |
+| `elder01_01` | 老人端 | 王秀英 | `123456` | `family01` | 与 `family01` 联动，登录后需要做真实设备绑定解绑演示 |
 | `elder01_02` | 老人端 | 李建国 | `123456` | `family01` | 与 `family01` 联动，登录后实时显示 mock data |
 | `family02` | 家庭端 | 家属 02 | `123456` | `family02` | 绑定对应虚拟设备组，登录后实时显示 mock data |
 | `elder02_01` | 老人端 | 张桂兰 | `123456` | `family02` | 与 `family02` 联动，登录后实时显示 mock data |

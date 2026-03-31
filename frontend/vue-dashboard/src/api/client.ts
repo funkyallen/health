@@ -1135,7 +1135,19 @@ export const api = {
   alarmSocket: () => new WebSocket(`${WS_BASE}/ws/alarms`),
 
   // Voice API
-  voiceStatus: () => requestJson<{ configured: boolean; asr_model: string | null; tts_model: string | null; tts_voices: string[]; provider: string; note: string }>(`${API_BASE}/voice/status`),
+  voiceStatus: () =>
+    requestJson<{
+      configured: boolean;
+      asr_model: string | null;
+      tts_model: string | null;
+      tts_voices: string[];
+      provider?: string;
+      service_provider?: string;
+      note: string;
+    }>(`${API_BASE}/voice/status`).then((payload) => ({
+      ...payload,
+      provider: payload.provider ?? payload.service_provider ?? "none",
+    })),
   voiceAsr: async (audioBlob: Blob): Promise<{ ok: boolean; text: string; provider: string; error?: string }> => {
     const form = new FormData();
     form.append("file", audioBlob, "recording.wav");

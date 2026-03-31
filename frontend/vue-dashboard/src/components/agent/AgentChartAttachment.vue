@@ -19,13 +19,13 @@ let chartInstance: echarts.ECharts | null = null;
 
 const resolvedHeight = computed(() => props.height ?? 320);
 
-// Deep-merge dark theme overrides into any echarts option coming from backend
-function applyDarkTheme(option: Record<string, unknown>): Record<string, unknown> {
+// Deep-merge theme overrides into any echarts option coming from backend
+function applyEchartsTheme(option: Record<string, unknown>): Record<string, unknown> {
   const axisStyle = {
-    axisLine: { lineStyle: { color: "rgba(56,189,248,0.18)" } },
-    splitLine: { lineStyle: { color: "rgba(56,189,248,0.07)", type: "dashed" } },
-    axisLabel: { color: "#4d7a94", fontSize: 12 },
-    nameTextStyle: { color: "#6ea8c8" },
+    axisLine: { lineStyle: { color: "rgba(15, 23, 42, 0.1)" } },
+    splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.05)", type: "dashed" } },
+    axisLabel: { color: "#475569", fontSize: 12 },
+    nameTextStyle: { color: "#64748b" },
   };
 
   const applyAxis = (axes: unknown) => {
@@ -61,21 +61,21 @@ function applyDarkTheme(option: Record<string, unknown>): Record<string, unknown
   return {
     ...option,
     backgroundColor: "transparent",
-    textStyle: { color: "#7eb8d4", fontFamily: "'Manrope','Noto Sans SC',sans-serif" },
+    textStyle: { color: "#334155", fontFamily: "'Manrope','Noto Sans SC',sans-serif" },
     legend: {
       top: 8,
-      textStyle: { color: "#6ea8c8", fontSize: 13 },
-      inactiveColor: "#2d4a5a",
+      textStyle: { color: "#475569", fontSize: 13 },
+      inactiveColor: "#cbd5e1",
       ...((option.legend as object) ?? {}),
     },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(8,16,30,0.96)",
-      borderColor: "rgba(34,211,238,0.20)",
+      backgroundColor: "rgba(255, 255, 255, 0.98)",
+      borderColor: "rgba(15, 23, 42, 0.12)",
       borderWidth: 1,
-      textStyle: { color: "#e2f0ff", fontSize: 13 },
+      textStyle: { color: "#0f172a", fontSize: 13 },
       axisPointer: {
-        lineStyle: { color: "rgba(34,211,238,0.30)", width: 1.5, type: "dashed" },
+        lineStyle: { color: "rgba(15, 23, 42, 0.15)", width: 1.5, type: "dashed" },
       },
       ...((option.tooltip as object) ?? {}),
     },
@@ -90,7 +90,7 @@ function renderChart() {
   if (!chartRef.value) return;
   chartInstance ??= echarts.init(chartRef.value, undefined, { renderer: "canvas" });
   const base = (props.chart.echarts_option ?? {}) as Record<string, unknown>;
-  chartInstance.setOption(applyDarkTheme(base) as echarts.EChartsCoreOption, true);
+  chartInstance.setOption(applyEchartsTheme(base) as echarts.EChartsCoreOption, true);
   chartInstance.resize();
 }
 
@@ -131,11 +131,9 @@ onUnmounted(() => {
   gap: 14px;
   padding: 20px;
   border-radius: 24px;
-  background:
-    linear-gradient(160deg, rgba(14, 22, 42, 0.98) 0%, rgba(9, 14, 28, 0.99) 100%),
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 50%);
-  border: 1px solid rgba(56, 189, 248, 0.14);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(56, 189, 248, 0.06);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
   position: relative;
   overflow: hidden;
 }
@@ -145,10 +143,10 @@ onUnmounted(() => {
   position: absolute;
   inset: 0 auto auto 0;
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 40%, transparent 100%);
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand) 0%, #38bdf8 40%, transparent 100%);
   border-radius: 24px 24px 0 0;
-  opacity: 0.6;
+  opacity: 0.9;
 }
 
 .agent-chart-card__head {
@@ -160,28 +158,28 @@ onUnmounted(() => {
 
 .agent-chart-card__head h4 {
   margin: 0;
-  color: #e2f0ff;
-  font-size: 1.02rem;
-  font-weight: 700;
+  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 800;
   letter-spacing: -0.01em;
 }
 
 .agent-chart-card__head p {
   margin: 6px 0 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   line-height: 1.65;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
 }
 
 .agent-chart-card__badge {
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.10);
-  color: #22d3ee;
+  background: #f1f5f9;
+  color: var(--brand);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  border: 1px solid rgba(34, 211, 238, 0.18);
+  border: 1px solid var(--line-medium);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -190,7 +188,7 @@ onUnmounted(() => {
   width: 100%;
   min-height: 220px;
   border-radius: 16px;
-  background: rgba(7, 12, 22, 0.60);
-  border: 1px solid rgba(56, 189, 248, 0.08);
+  background: #f8fafc;
+  border: 1px solid var(--line-medium);
 }
 </style>

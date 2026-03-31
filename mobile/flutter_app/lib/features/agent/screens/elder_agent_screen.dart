@@ -192,11 +192,11 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
         : _resolveDeviceMacFromProfile(careProvider.profile);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         leading: IconButton(
           onPressed: _goToHome,
-          icon: const Icon(Icons.home_outlined, color: Colors.white70),
+          icon: const Icon(Icons.home_outlined, color: Color(0xFF64748B)),
           tooltip: '回到主页',
         ),
         title: Column(
@@ -205,15 +205,15 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
             Text(
               _experience.title,
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFF0F172A),
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               _experience.subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+              style: const TextStyle(
+                color: Color(0xFF64748B),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -229,9 +229,9 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: <Color>[
-              Color(0xFF08161B),
-              Color(0xFF091A20),
-              Color(0xFF071115),
+              Color(0xFFF8FAFC),
+              Color(0xFFF1F5F9),
+              Color(0xFFF8FAFC),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -293,14 +293,14 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: _experience.accent.withValues(alpha: 0.25),
+          color: const Color(0xFFE2E8F0),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: _experience.accent.withValues(alpha: 0.08),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -329,9 +329,9 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
                 const Text(
                   '我会先看手环最近的变化，再用容易听懂的话告诉您重点。',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
                     height: 1.4,
                   ),
                 ),
@@ -340,9 +340,10 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
                   deviceMac == null || deviceMac.isEmpty
                       ? '还没有拿到当前手环信息'
                       : '当前分析设备：$deviceMac',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 13,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -367,10 +368,10 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
               _experience.emptyPromptTitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -382,13 +383,15 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
                 child: ElevatedButton(
                   onPressed: () => _sendMessage(prompt),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    backgroundColor: Colors.white,
                     foregroundColor: _experience.accent,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
-                      side: BorderSide(
-                        color: _experience.accent.withValues(alpha: 0.2),
+                      side: const BorderSide(
+                        color: Color(0xFFE2E8F0),
+                        width: 1.5,
                       ),
                     ),
                   ),
@@ -414,15 +417,15 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
         : (voiceProvider.isProcessing ? '正在整理成问题...' : '长按话筒跟我说话');
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(28, 18, 28, 36),
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 42),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1D24),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        color: const Color(0xFF0F172A),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.34),
-            blurRadius: 18,
-            offset: const Offset(0, -6),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
@@ -434,11 +437,11 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
             style: TextStyle(
               color: voiceProvider.isRecording
                   ? _experience.accent
-                  : Colors.white54,
-              fontSize: 18,
+                  : const Color(0xFF64748B),
+              fontSize: 20,
               fontWeight: voiceProvider.isRecording
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+                  ? FontWeight.w800
+                  : FontWeight.w600,
             ),
           ),
           const SizedBox(height: 20),
@@ -471,17 +474,17 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
                     },
                   ),
                 CircleAvatar(
-                  radius: 52,
+                  radius: 56,
                   backgroundColor:
                       voiceProvider.isRecording || voiceProvider.isProcessing
                           ? _experience.accent
-                          : Colors.white.withValues(alpha: 0.1),
+                          : const Color(0xFFEFF6FF),
                   child: Icon(
                     voiceProvider.isProcessing ? Icons.graphic_eq : Icons.mic,
-                    size: 50,
+                    size: 56,
                     color:
                         voiceProvider.isRecording || voiceProvider.isProcessing
-                            ? const Color(0xFF08161B)
+                            ? Colors.white
                             : _experience.accent,
                   ),
                 ),

@@ -9,6 +9,13 @@ from backend.models.health_model import HealthSample, HealthTrendPoint
 class StreamService:
     """Stores recent realtime samples and trend-ready history in memory."""
 
+    @staticmethod
+    def _normalize_mac(device_mac: str) -> str:
+        compact = "".join(ch for ch in device_mac if ch.isalnum()).upper()
+        if len(compact) == 12:
+            return ":".join(compact[i : i + 2] for i in range(0, 12, 2))
+        return device_mac.upper()
+
     def __init__(self, retention_points: int = 600) -> None:
         self._retention_points = retention_points
         self._streams: dict[str, deque[HealthSample]] = defaultdict(
@@ -16,10 +23,12 @@ class StreamService:
         )
 
     def publish(self, sample: HealthSample) -> None:
-        self._streams[sample.device_mac].append(sample)
+        normalized = self._normalize_mac(sample.device_mac)
+        self._streams[normalized].append(sample)
 
     def latest(self, device_mac: str) -> HealthSample | None:
-        stream = self._streams.get(device_mac.upper())
+        normalized = self._normalize_mac(device_mac)
+        stream = self._streams.get(normalized)
         if not stream:
             return None
         return stream[-1]
@@ -34,7 +43,8 @@ class StreamService:
         minutes: int | None = None,
         limit: int = 60,
     ) -> list[HealthSample]:
-        values = list(self._streams.get(device_mac.upper(), deque()))
+        normalized = self._normalize_mac(device_mac)
+        values = list(self._streams.get(normalized, deque()))
         if minutes is not None:
             cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
             values = [sample for sample in values if sample.timestamp >= cutoff]
@@ -47,7 +57,7 @@ class StreamService:
         minutes: int = 1440,
         per_device_limit: int = 288,
     ) -> dict[str, list[HealthSample]]:
-        selected_macs = [mac.upper() for mac in device_macs] if device_macs else sorted(self._streams.keys())
+        selected_macs = [self._normalize_mac(mac) for mac in device_macs] if device_macs else sorted(self._streams.keys())
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
         snapshots: dict[str, list[HealthSample]] = {}
         for mac in selected_macs:

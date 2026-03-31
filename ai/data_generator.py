@@ -70,6 +70,18 @@ class HealthDemoScenario:
 
 
 DEMO_TIMEZONE = ZoneInfo("Asia/Shanghai")
+DEMO_MOCK_SUBJECTS = [
+    ("李建国", "1-102"),
+    ("张桂兰", "1-103"),
+    ("陈德福", "2-101"),
+    ("刘春梅", "2-102"),
+    ("赵志强", "2-103"),
+    ("黄玉兰", "3-101"),
+    ("周永顺", "3-102"),
+    ("吴淑芬", "3-103"),
+    ("郑国华", "4-101"),
+    ("孙美玲", "4-102"),
+]
 
 
 class SyntheticHealthDataGenerator:
@@ -642,8 +654,9 @@ class SyntheticHealthDataGenerator:
             "stable_normal",
             "alert_active",
         ][index % 12]
-        display_name = f"Demo Elder {index + 1:02d}"
-        apartment = f"{1 + (index // 4)}-{101 + index}"
+        subject_name, subject_apartment = DEMO_MOCK_SUBJECTS[index % len(DEMO_MOCK_SUBJECTS)]
+        display_name = subject_name
+        apartment = subject_apartment
         hr_base = self._rng.randint(62, 84)
         temp_base = round(self._rng.uniform(36.2, 36.8), 1)
         spo2_base = self._rng.randint(95, 99)

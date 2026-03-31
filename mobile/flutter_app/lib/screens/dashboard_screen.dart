@@ -61,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final sample = _sample;
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
@@ -75,7 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(sample.deviceMac, style: const TextStyle(color: Colors.white70)),
+                  Text(sample.deviceMac, style: const TextStyle(color: const Color(0xFF64748B))),
                   const SizedBox(height: 18),
                   GridView.count(
                     shrinkWrap: true,
@@ -84,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisSpacing: 12,
                     childAspectRatio: 1.35,
                     children: [
-                      VitalCard(label: '心率', value: '${sample.heartRate} bpm', accent: const Color(0xFFFF875A)),
+                      VitalCard(label: '心率', value: '${sample.heartRate} bpm', accent: const Color(0xFF2563EB)),
                       VitalCard(label: '体温', value: '${sample.temperature.toStringAsFixed(1)} ℃', accent: const Color(0xFF60C9A9)),
                       VitalCard(label: '血氧', value: '${sample.bloodOxygen} %', accent: const Color(0xFF82D7F7)),
                       VitalCard(label: '血压', value: sample.bloodPressure, accent: const Color(0xFFF6D36B)),
@@ -99,12 +99,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(sample.sosFlag ? Icons.sos : Icons.favorite, color: Colors.white),
+                        Icon(sample.sosFlag ? Icons.sos : Icons.favorite, color: const Color(0xFF0F172A)),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             sample.sosFlag ? 'SOS 已触发，请立即联系现场人员。' : '设备运行正常，正在持续接收实时数据。',
-                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            style: const TextStyle(color: const Color(0xFF0F172A), fontSize: 16),
                           ),
                         ),
                       ],

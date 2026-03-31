@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../widgets/logout_action.dart';
-import '../../agent/screens/elder_agent_screen.dart';
+import '../../agent/widgets/ai_chat_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../models/care_profile_model.dart';
 import '../providers/care_provider.dart';
 
@@ -40,19 +41,20 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
     final elderName = metric?.subjectName ?? authUser?.name ?? '长者';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           '$elderName的健康守护',
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
+            color: AppColors.textMain,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.textMain),
         actions: const [LogoutAction()],
       ),
       body: _buildBody(careProvider, elderName, metric),
@@ -66,7 +68,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   ) {
     if (provider.status == CareLoadStatus.loading && provider.profile == null) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFF875A)),
+        child: CircularProgressIndicator(color: Color(0xFF2563EB)),
       );
     }
 
@@ -77,16 +79,12 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           children: [
             Text(
               provider.errorMessage ?? '加载失败',
-              style: const TextStyle(color: Colors.white70, fontSize: 18),
+              style: const TextStyle(color: AppColors.textSub, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => provider.fetchProfile(),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-              ),
-              child: const Text('重试', style: TextStyle(fontSize: 18)),
+              child: const Text('重试', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
             ),
           ],
         ),
@@ -136,13 +134,16 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             const SizedBox(height: 20),
             _buildBigButton(
               Icons.auto_awesome,
-              '智能健康助手',
-              const Color(0xFFFF875A),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ElderAgentScreen(deviceMac: metric?.deviceMac),
+              '助手帮我看看',
+              AppColors.primary,
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => AiChatDialog(
+                  isElder: true,
+                  deviceMac: metric?.deviceMac,
+                  availableDevices: profile.deviceMetrics,
                 ),
               ),
             ),
@@ -167,10 +168,17 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   Widget _buildHeaderCard(String elderName) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -179,8 +187,8 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             elderName,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 40,
-              fontWeight: FontWeight.bold,
+              fontSize: 48,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -201,30 +209,36 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
+          width: 3,
           color: hasDevice
-              ? (isOnline
-                  ? Colors.green.withValues(alpha: 0.5)
-                  : Colors.orange.withValues(alpha: 0.5))
-              : Colors.red.withValues(alpha: 0.3),
+              ? (isOnline ? AppColors.success : AppColors.warning)
+              : AppColors.error,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         children: [
           Icon(
             hasDevice ? Icons.watch : Icons.watch_off,
             size: 64,
-            color: Colors.white54,
+            color: hasDevice ? (isOnline ? Colors.green : Colors.orange) : Colors.red,
           ),
           const SizedBox(height: 16),
           Text(
-            hasDevice ? '设备已连接' : '设备未连接',
+            hasDevice ? '手环已连接' : '手环未连接',
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
+              color: AppColors.textMain,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
             ),
           ),
           if (metric != null) ...[
@@ -232,14 +246,14 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             Text(
               '${metric.deviceName} · ${metric.deviceMac}',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 18),
+              style: const TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ] else ...[
             const SizedBox(height: 8),
             const Text(
-              '登记并绑定手环后，实时数据会自动同步到当前账号。',
+              '请戴好手环，数据会自动同步。',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 18),
+              style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
           const SizedBox(height: 12),
@@ -247,12 +261,11 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.battery_full,
-                    color: Colors.greenAccent, size: 24),
+                const Icon(Icons.battery_full, color: AppColors.success, size: 28),
                 const SizedBox(width: 8),
                 Text(
                   '电量: $battery',
-                  style: const TextStyle(color: Colors.white70, fontSize: 22),
+                  style: const TextStyle(color: AppColors.textMain, fontSize: 24, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -314,19 +327,27 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   ) {
     return Container(
       width: (MediaQuery.of(context).size.width - 60) / 2,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
+        border: Border.all(color: AppColors.border, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: const Color(0xFFFF875A), size: 36),
+          Icon(icon, color: const Color(0xFF2563EB), size: 42),
           const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(color: Colors.white54, fontSize: 22),
+            style: const TextStyle(color: AppColors.textSub, fontSize: 24, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           RichText(
@@ -336,14 +357,14 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                 TextSpan(
                   text: value,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
+                    color: AppColors.textMain,
+                    fontSize: 56, // Enormous font for elders
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: const TextStyle(color: Colors.white38, fontSize: 20),
+                  style: const TextStyle(color: AppColors.textSub, fontSize: 24, fontWeight: FontWeight.w900),
                 ),
               ],
             ),
@@ -354,27 +375,27 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   }
 
   Widget _buildBindDeviceButton(CareProvider provider) {
-    return OutlinedButton.icon(
+    return ElevatedButton.icon(
       onPressed:
           provider.isMutating ? null : () => _showBindDeviceDialog(provider),
       icon: provider.isMutating
           ? const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
-          : const Icon(Icons.watch, size: 28, color: Colors.lightBlueAccent),
+          : const Icon(Icons.add_link, size: 32, color: Colors.white),
       label: Text(
-        provider.isMutating ? '处理中...' : '登记并绑定手环设备',
+        provider.isMutating ? '处理中...' : '绑定新手环',
         style: const TextStyle(
-          fontSize: 22,
-          color: Colors.lightBlueAccent,
-          fontWeight: FontWeight.w600,
+          fontSize: 26,
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
         ),
       ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        side: const BorderSide(color: Colors.lightBlueAccent, width: 1.5),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        backgroundColor: AppColors.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
@@ -388,26 +409,26 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
-                  backgroundColor: const Color(0xFF0D1A22),
+                  backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(
-                        color: Colors.orangeAccent, width: 1.5),
+                    side: const BorderSide(color: AppColors.warning, width: 2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   title: const Text(
                     '解绑手环设备',
                     style: TextStyle(
-                      color: Colors.orangeAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 24,
                     ),
                   ),
                   content: const Text(
-                    '确认解绑后，这只手环会与当前账号解除绑定，实时健康数据将停止同步。之后如需重新使用，可再次登记绑定。',
+                    '确认解绑后，这只手环会与当前账号解除绑定，实时健康数据将停止同步。',
                     style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 18,
-                      height: 1.6,
+                      color: AppColors.textMain,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      height: 1.5,
                     ),
                   ),
                   actions: [
@@ -415,7 +436,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                       onPressed: () => Navigator.pop(dialogContext, false),
                       child: const Text(
                         '取消',
-                        style: TextStyle(color: Colors.white54, fontSize: 18),
+                        style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
                     TextButton(
@@ -423,9 +444,9 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                       child: const Text(
                         '确认解绑',
                         style: TextStyle(
-                          color: Colors.orangeAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
                         ),
                       ),
                     ),
@@ -453,20 +474,20 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           ? const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warning),
             )
-          : const Icon(Icons.link_off, size: 28, color: Colors.orangeAccent),
+          : const Icon(Icons.link_off, size: 28, color: AppColors.warning),
       label: Text(
         provider.isMutating ? '处理中...' : '解绑手环设备',
         style: const TextStyle(
           fontSize: 22,
-          color: Colors.orangeAccent,
-          fontWeight: FontWeight.w600,
+          color: AppColors.warning,
+          fontWeight: FontWeight.w900,
         ),
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 20),
-        side: const BorderSide(color: Colors.orangeAccent, width: 1.5),
+        side: const BorderSide(color: AppColors.warning, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
@@ -486,22 +507,23 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             );
           },
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withValues(alpha: 0.2),
+        backgroundColor: color.withValues(alpha: 0.08),
         foregroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 40),
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: color.withValues(alpha: 0.5)),
+          side: BorderSide(color: color, width: 3),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 56),
+          Icon(icon, size: 64, color: color),
           const SizedBox(height: 16),
           Text(
             label,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: color, letterSpacing: 2),
           ),
         ],
       ),
@@ -511,26 +533,28 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   Widget _buildInfoCard(String basicAdvice) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppColors.elderBlueBg, // Light blue background
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBFDBFE), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Text(
-            '今日提示',
-            style: TextStyle(color: Colors.white54, fontSize: 28),
+            '今日健康建议',
+            style: TextStyle(color: AppColors.elderBlueText, fontSize: 32, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             basicAdvice,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              height: 1.5,
+              color: AppColors.textMain,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              height: 1.4,
             ),
           ),
         ],
@@ -547,17 +571,17 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
         String? localError;
         return StatefulBuilder(
           builder: (dialogContext, setState) => AlertDialog(
-            backgroundColor: const Color(0xFF0D1A22),
+            backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Colors.lightBlueAccent, width: 1.2),
+              side: const BorderSide(color: AppColors.primary, width: 2),
             ),
             title: const Text(
               '登记并绑定手环',
               style: TextStyle(
-                color: Colors.lightBlueAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+                fontSize: 26,
               ),
             ),
             content: SizedBox(
@@ -580,7 +604,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     '支持输入 12 位十六进制 MAC，系统会自动格式化。',
-                    style: TextStyle(color: Colors.white54, fontSize: 14),
+                    style: TextStyle(color: AppColors.textSub, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   if (localError != null) ...[
                     const SizedBox(height: 12),
@@ -598,7 +622,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text(
                   '取消',
-                  style: TextStyle(color: Colors.white54, fontSize: 18),
+                  style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
               TextButton(
@@ -622,9 +646,9 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                 child: const Text(
                   '确认绑定',
                   style: TextStyle(
-                    color: Colors.lightBlueAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
                   ),
                 ),
               ),
@@ -665,25 +689,25 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: const TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(color: Colors.white38),
+            hintStyle: const TextStyle(color: AppColors.textMuted),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.06),
+            fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                  const BorderSide(color: AppColors.border, width: 1.5),
             ),
             focusedBorder: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: Colors.lightBlueAccent),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
         ),

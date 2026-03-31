@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { BarChart, LineChart } from "echarts/charts";
 import {
   GridComponent,
@@ -48,13 +48,13 @@ function renderChart() {
     animationDuration: 500,
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(8, 16, 30, 0.96)",
-      borderColor: "rgba(34, 211, 238, 0.20)",
-      textStyle: { color: "#e2f0ff" },
+      backgroundColor: "rgba(255, 255, 255, 0.98)",
+      borderColor: "rgba(15, 23, 42, 0.12)",
+      textStyle: { color: "#0f172a" },
     },
     legend: {
       top: 6,
-      textStyle: { color: "#7eb8d4" },
+      textStyle: { color: "#475569" },
     },
     grid: { left: 42, right: 42, top: 54, bottom: 30 },
     xAxis: {
@@ -67,8 +67,8 @@ function renderChart() {
           minute: "2-digit",
         }),
       ),
-      axisLine: { lineStyle: { color: "rgba(56, 189, 248, 0.18)" } },
-      axisLabel: { color: "#6ea8c8" },
+      axisLine: { lineStyle: { color: "rgba(15, 23, 42, 0.1)" } },
+      axisLabel: { color: "#64748b" },
     },
     yAxis: [
       {
@@ -76,14 +76,14 @@ function renderChart() {
         name: "平均评分",
         min: 0,
         max: 100,
-        axisLabel: { color: "#6ea8c8" },
-        splitLine: { lineStyle: { color: "rgba(56, 189, 248, 0.10)" } },
+        axisLabel: { color: "#64748b" },
+        splitLine: { lineStyle: { color: "rgba(15, 23, 42, 0.05)" } },
       },
       {
         type: "value",
         name: "告警 / 高风险",
         minInterval: 1,
-        axisLabel: { color: "#6ea8c8" },
+        axisLabel: { color: "#64748b" },
       },
     ],
     series: [
@@ -184,8 +184,8 @@ onUnmounted(() => {
   display: grid;
   gap: 8px;
   border-radius: 16px;
-  border: 1px solid rgba(56, 189, 248, 0.10);
-  background: rgba(13, 22, 38, 0.88);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
   padding: 14px;
 }
 

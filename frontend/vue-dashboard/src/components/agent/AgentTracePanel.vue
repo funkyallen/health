@@ -222,9 +222,10 @@ const summaryText = computed(() => {
 <style scoped>
 .agent-trace {
   border-radius: 24px;
-  background: rgba(12, 18, 34, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.14);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .agent-trace__summary {
@@ -246,8 +247,8 @@ const summaryText = computed(() => {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  color: #22d3ee;
-  background: rgba(34, 211, 238, 0.12);
+  color: var(--brand);
+  background: #eff6ff;
   font-size: 0.95rem;
 }
 
@@ -317,8 +318,8 @@ const summaryText = computed(() => {
 .agent-citation-card {
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(14, 20, 38, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.10);
+  background: #f8fafc;
+  border: 1px solid var(--line-medium);
 }
 
 .agent-stage-card__head,
@@ -332,14 +333,14 @@ const summaryText = computed(() => {
 .agent-stage-card strong,
 .agent-tool-card strong,
 .agent-citation-card strong {
-  color: #e2f0ff;
+  color: var(--text-main);
 }
 
 .agent-stage-card p,
 .agent-tool-card p,
 .agent-citation-card p {
   margin: 8px 0 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   line-height: 1.7;
   font-size: 0.88rem;
 }
@@ -348,19 +349,19 @@ const summaryText = computed(() => {
 .agent-tool-card__head em,
 .agent-tool-card__head span,
 .agent-citation-card span {
-  color: #4d7a94;
+  color: #64748b;
   font-size: 0.8rem;
   font-style: normal;
 }
 
 .agent-stage-card[data-tone="running"] {
-  border-color: rgba(34, 211, 238, 0.28);
-  background: rgba(10, 24, 44, 0.98);
+  border-color: var(--brand);
+  background: #ffffff;
 }
 
 .agent-stage-card[data-tone="error"] {
-  border-color: rgba(248, 113, 122, 0.28);
-  background: rgba(24, 10, 14, 0.98);
+  border-color: #f87171;
+  background: #fef2f2;
 }
 
 .agent-tool-card__title {
@@ -370,13 +371,13 @@ const summaryText = computed(() => {
 
 .agent-tool-card__details {
   margin-top: 12px;
-  border-top: 1px solid rgba(56, 189, 248, 0.10);
+  border-top: 1px solid var(--line-medium);
   padding-top: 12px;
 }
 
 .agent-tool-card__details summary {
   cursor: pointer;
-  color: #22d3ee;
+  color: var(--brand);
   font-size: 0.84rem;
   font-weight: 600;
 }
@@ -393,13 +394,13 @@ const summaryText = computed(() => {
 }
 
 .agent-tool-card__meta dt {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.78rem;
 }
 
 .agent-tool-card__meta dd {
   margin: 0;
-  color: #a8d8f0;
+  color: var(--text-main);
   font-size: 0.85rem;
 }
 
@@ -410,7 +411,7 @@ const summaryText = computed(() => {
 }
 
 .agent-tool-card__children > span {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.78rem;
 }
 
@@ -418,7 +419,7 @@ const summaryText = computed(() => {
 .agent-degraded-list {
   margin: 0;
   padding-left: 18px;
-  color: #6ea8c8;
+  color: var(--text-main);
   display: grid;
   gap: 6px;
 }
@@ -433,43 +434,43 @@ const summaryText = computed(() => {
 }
 
 .agent-tool-card[data-kind="query"] {
-  border-color: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.4);
 }
 
 .agent-tool-card[data-kind="analysis"] {
-  border-color: rgba(52, 211, 153, 0.22);
+  border-color: rgba(52, 211, 153, 0.4);
 }
 
 .agent-tool-card[data-kind="report"] {
-  border-color: rgba(251, 146, 60, 0.22);
+  border-color: rgba(251, 146, 60, 0.4);
 }
 
 .agent-tool-card[data-kind="recommendation"] {
-  border-color: rgba(167, 139, 250, 0.22);
+  border-color: rgba(167, 139, 250, 0.4);
 }
 
 .agent-trace__section h4 {
   margin: 0;
-  color: #e2f0ff;
+  color: var(--text-main);
   font-size: 0.96rem;
 }
 
 .agent-trace__section header span {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.8rem;
 }
 
 .agent-trace__summary-copy strong {
-  color: #e2f0ff;
+  color: var(--text-main);
 }
 
 .agent-trace__summary-copy span {
-  color: #6ea8c8;
+  color: var(--text-sub);
   font-size: 0.84rem;
 }
 
 .agent-trace__caret {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 1rem;
   transition: transform 180ms ease;
 }

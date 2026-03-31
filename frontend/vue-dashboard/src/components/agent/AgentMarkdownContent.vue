@@ -72,8 +72,8 @@ watch(
 }
 
 .agent-markdown--report {
-  font-size: 1.18rem;
-  line-height: 2;
+  font-size: 1.25rem;
+  line-height: 2.1;
 }
 
 .agent-markdown :deep(*:first-child) {
@@ -92,8 +92,9 @@ watch(
 .agent-markdown :deep(h6) {
   margin: 1.1em 0 0.45em;
   color: var(--text-main);
-  line-height: 1.25;
+  line-height: 1.35;
   letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .agent-markdown :deep(h1) {
@@ -130,25 +131,25 @@ watch(
 .agent-markdown :deep(blockquote) {
   margin-left: 0;
   padding: 0.9rem 1rem;
-  border-left: 3px solid rgba(34, 211, 238, 0.36);
+  border-left: 3px solid var(--brand);
   border-radius: 0 16px 16px 0;
-  background: rgba(34, 211, 238, 0.06);
+  background: #f8fafc;
   color: var(--text-sub);
 }
 
 .agent-markdown :deep(code) {
   padding: 0.14rem 0.38rem;
   border-radius: 0.5rem;
-  background: rgba(34, 211, 238, 0.10);
-  color: #67e8f9;
+  background: #f1f5f9;
+  color: #0f172a;
   font-size: 0.92em;
 }
 
 .agent-markdown :deep(pre) {
   padding: 1rem;
   border-radius: 1rem;
-  background: #060c18;
-  color: #a5d8ff;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .agent-markdown :deep(pre code) {
@@ -162,36 +163,36 @@ watch(
   margin: 1.5rem 0;
   border-collapse: separate;
   border-spacing: 0;
-  background: rgba(12, 18, 32, 0.4);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
   border-radius: 12px;
   overflow: hidden;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
 }
 
 .agent-markdown :deep(thead th) {
-  background: rgba(34, 211, 238, 0.12);
-  color: #22d3ee;
+  background: #f8fafc;
+  color: var(--text-main);
   font-weight: 600;
   text-align: left;
   padding: 1rem;
-  border-bottom: 2px solid rgba(34, 211, 238, 0.2);
+  border-bottom: 1px solid var(--line-medium);
   white-space: nowrap;
 }
 
 .agent-markdown :deep(td) {
   padding: 1rem;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+  border-bottom: 1px solid var(--line-medium);
   color: var(--text-main);
   vertical-align: middle;
 }
 
 .agent-markdown :deep(tr:nth-child(even)) {
-  background: rgba(56, 189, 248, 0.03);
+  background: #fcfcfc;
 }
 
 .agent-markdown :deep(tr:hover) {
-  background: rgba(34, 211, 238, 0.06);
+  background: #f1f5f9;
 }
 
 .agent-markdown :deep(tr:last-child td) {

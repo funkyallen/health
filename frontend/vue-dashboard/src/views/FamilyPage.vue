@@ -168,7 +168,6 @@ const focusSummaryCopy = computed(() => {
   return `最近同步指标为 ${metrics}。整体趋势相对平稳，可继续保持日常观察并关注后续波动。`;
 });
 const familyTrendPreview = computed(() => focusTrend.value.slice(-4).reverse());
-const hasRealtimeTrend = computed(() => focusTrend.value.length > 0);
 const displayFocusLatest = computed(() => focusLatest.value ?? focusRow.value?.sample ?? null);
 const familyTrendHeadline = computed(() => {
   if (!familyTrendPreview.value.length) {
@@ -273,9 +272,6 @@ const familySnapshotCards = computed<SnapshotMetric[]>(() => {
     },
   ];
 });
-const basicAdvice = computed(
-  () => "当前还没有可用设备，请先确认家属关系和设备绑定状态。",
-);
 const syncLabel = computed(() =>
   lastSyncAt.value ? lastSyncAt.value.toLocaleTimeString("zh-CN", { hour12: false }) : "尚未同步",
 );

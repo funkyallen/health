@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/alarm_provider.dart';
 import '../models/alarm_model.dart';
 import '../../../widgets/logout_action.dart';
+import '../../../core/theme/app_colors.dart';
+import '../providers/alarm_provider.dart';
 
 class AlarmCenterScreen extends StatefulWidget {
   const AlarmCenterScreen({super.key});
@@ -34,17 +35,17 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
     final alarmProvider = context.watch<AlarmProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('告警中心', style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: const Text('告警中心', style: TextStyle(color: const Color(0xFF0F172A), fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: const [LogoutAction()],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFFFF875A),
-          unselectedLabelColor: Colors.white30,
-          indicatorColor: const Color(0xFFFF875A),
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSub,
+          indicatorColor: AppColors.primary,
           tabs: const [
             Tab(text: '活动告警'),
             Tab(text: '调度队列'),
@@ -58,7 +59,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
 
   Widget _buildBody(AlarmProvider provider) {
     if (provider.status == AlarmLoadStatus.loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF875A)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
     }
 
     if (provider.status == AlarmLoadStatus.error) {
@@ -66,8 +67,8 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(provider.errorMessage ?? '加载失败', style: const TextStyle(color: Colors.white70)),
-            TextButton(onPressed: () => provider.init(), child: const Text('重试')),
+            Text(provider.errorMessage ?? '加载失败', style: const TextStyle(color: AppColors.textSub)),
+            TextButton(onPressed: () => provider.init(), child: const Text('重试', style: TextStyle(color: AppColors.primary))),
           ],
         ),
       );
@@ -85,7 +86,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
 
   Widget _buildAlarmList(List<AlarmRecord> alarms, AlarmProvider provider) {
     if (alarms.isEmpty) {
-      return const Center(child: Text('暂无未确认告警', style: TextStyle(color: Colors.white24)));
+      return const Center(child: Text('暂无未确认告警', style: TextStyle(color: AppColors.textMuted)));
     }
 
     return ListView.builder(
@@ -101,12 +102,12 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
 
     return Card(
       color: (isSOS || isCritical)
-          ? Colors.redAccent.withValues(alpha: 0.1)
-          : Colors.white.withValues(alpha: 0.05),
+          ? AppColors.error.withOpacity(0.05)
+          : AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: (isSOS || isCritical) ? const BorderSide(color: Colors.redAccent, width: 0.5) : BorderSide.none,
+        side: (isSOS || isCritical) ? const BorderSide(color: AppColors.error, width: 1) : const BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -117,31 +118,31 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
               children: [
                 Icon(
                   isSOS ? Icons.sos : Icons.warning_amber_rounded,
-                  color: (isSOS || isCritical) ? Colors.redAccent : Colors.orangeAccent,
+                  color: (isSOS || isCritical) ? AppColors.error : AppColors.warning,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     alarm.alarmType.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: const Color(0xFF0F172A), fontWeight: FontWeight.bold),
                   ),
                 ),
                 Text(
                   alarm.createdDateDisplay,
-                  style: const TextStyle(color: Colors.white24, fontSize: 10),
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               alarm.message,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: const TextStyle(color: const Color(0xFF64748B), fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(
               '设备: ${alarm.deviceMac}',
-              style: const TextStyle(color: Colors.white24, fontSize: 12),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 16),
             Row(
@@ -150,17 +151,17 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
                 if (alarm.acknowledged)
                   const Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+                      Icon(Icons.check_circle, color: AppColors.success, size: 16),
                       SizedBox(width: 4),
-                      Text('已确认', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                      Text('已确认', style: TextStyle(color: AppColors.success, fontSize: 12)),
                     ],
                   )
                 else
                   ElevatedButton(
                     onPressed: () => provider.acknowledge(alarm.id),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF875A),
-                      foregroundColor: const Color(0xFF08161B),
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                       minimumSize: const Size(80, 32),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -177,7 +178,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
 
   Widget _buildQueueList(List<AlarmQueueItem> queue) {
     if (queue.isEmpty) {
-      return const Center(child: Text('调度队列为空', style: TextStyle(color: Colors.white24)));
+      return const Center(child: Text('调度队列为空', style: TextStyle(color: AppColors.textMuted)));
     }
 
     return ListView.builder(
@@ -190,9 +191,9 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
             backgroundColor: Color.lerp(Colors.orange, Colors.red, item.score / 10),
             radius: 4,
           ),
-          title: Text('MAC: ${item.alarm.deviceMac}', style: const TextStyle(color: Colors.white, fontSize: 14)),
-          subtitle: Text('优先级: ${item.score} | 状态: ${item.alarm.alarmLevel}', style: const TextStyle(color: Colors.white30, fontSize: 12)),
-          trailing: const Icon(Icons.low_priority, color: Colors.white10),
+          title: Text('MAC: ${item.alarm.deviceMac}', style: const TextStyle(color: AppColors.textMain, fontSize: 14)),
+          subtitle: Text('优先级: ${item.score} | 状态: ${item.alarm.alarmLevel}', style: const TextStyle(color: AppColors.textSub, fontSize: 12)),
+          trailing: const Icon(Icons.low_priority, color: AppColors.border),
         );
       },
     );
@@ -200,7 +201,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
 
   Widget _buildPushList(List<MobilePushRecord> pushes) {
     if (pushes.isEmpty) {
-      return const Center(child: Text('暂无历史推送', style: TextStyle(color: Colors.white24)));
+      return const Center(child: Text('暂无历史推送', style: TextStyle(color: AppColors.textMuted)));
     }
 
     return ListView.builder(
@@ -209,11 +210,11 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
       itemBuilder: (context, index) {
         final push = pushes[index];
         return Card(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: AppColors.surface,
           child: ListTile(
-            title: Text(push.title, style: const TextStyle(color: Colors.white, fontSize: 14)),
-            subtitle: Text(push.body, style: const TextStyle(color: Colors.white30, fontSize: 12)),
-            trailing: Text(_formatPushDate(push.createdAt), style: const TextStyle(color: Colors.white10, fontSize: 10)),
+            title: Text(push.title, style: const TextStyle(color: AppColors.textMain, fontSize: 14)),
+            subtitle: Text(push.body, style: const TextStyle(color: AppColors.textSub, fontSize: 12)),
+            trailing: Text(_formatPushDate(push.createdAt), style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
           ),
         );
       },

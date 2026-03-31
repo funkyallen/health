@@ -247,9 +247,9 @@ const preparedAttachments = computed(() =>
 .agent-attachment {
   padding: 18px;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(14, 20, 38, 0.98), rgba(10, 16, 30, 0.96));
-  border: 1px solid rgba(56, 189, 248, 0.10);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
 }
 
 .agent-attachment__head {
@@ -263,7 +263,7 @@ const preparedAttachments = computed(() =>
 .agent-report__head h4,
 .agent-report__section h5 {
   margin: 0;
-  color: #e2f0ff;
+  color: var(--text-main);
 }
 
 .agent-attachment__head h3 {
@@ -274,7 +274,7 @@ const preparedAttachments = computed(() =>
 .agent-attachment__head p,
 .agent-report__summary {
   margin: 6px 0 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   line-height: 1.7;
   font-size: 0.92rem;
 }
@@ -290,14 +290,14 @@ const preparedAttachments = computed(() =>
   gap: 8px;
   padding: 16px;
   border-radius: 18px;
-  background: rgba(15, 22, 40, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.10);
+  background: #f8fafc;
+  border: 1px solid var(--line-medium);
   text-align: center;
   justify-items: center;
 }
 
 .agent-metric-card span {
-  color: #6ea8c8;
+  color: var(--text-sub);
   font-size: 0.95rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -305,14 +305,14 @@ const preparedAttachments = computed(() =>
 }
 
 .agent-metric-card strong {
-  color: #e2f0ff;
+  color: var(--text-main);
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .agent-metric-card small {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.82rem;
 }
 
@@ -334,8 +334,8 @@ const preparedAttachments = computed(() =>
 .agent-table-wrap {
   overflow: auto;
   border-radius: 18px;
-  border: 1px solid rgba(56, 189, 248, 0.10);
-  background: rgba(12, 18, 32, 0.96);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
 }
 
 .agent-table-wrap table {
@@ -348,20 +348,20 @@ const preparedAttachments = computed(() =>
   padding: 12px 16px;
   text-align: left;
   white-space: nowrap;
-  color: #22d3ee;
+  color: var(--text-sub);
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  background: rgba(34, 211, 238, 0.06);
-  border-bottom: 1px solid rgba(56, 189, 248, 0.14);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line-medium);
 }
 
 .agent-table-wrap td {
   padding: 11px 16px;
   white-space: nowrap;
-  color: #c8e0f4;
+  color: var(--text-main);
   font-size: 0.93rem;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.06);
+  border-bottom: 1px solid var(--line-default);
   min-width: 80px;
 }
 
@@ -370,7 +370,7 @@ const preparedAttachments = computed(() =>
 }
 
 .agent-table-wrap tr:hover td {
-  background: rgba(34, 211, 238, 0.04);
+  background: #f1f5f9;
 }
 
 .agent-report {
@@ -382,12 +382,12 @@ const preparedAttachments = computed(() =>
   display: grid;
   gap: 10px;
   padding: 12px 4px 4px;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.10);
+  border-bottom: 1px solid var(--line-medium);
   margin-bottom: 4px;
 }
 
 .agent-report__eyebrow {
-  color: #22d3ee;
+  color: var(--brand);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -398,14 +398,14 @@ const preparedAttachments = computed(() =>
   font-size: 1.55rem;
   letter-spacing: -0.03em;
   font-weight: 700;
-  color: #e2f0ff;
+  color: var(--text-main);
   margin: 0;
   line-height: 1.2;
 }
 
 .agent-report__summary {
   margin: 4px 0 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -420,10 +420,9 @@ const preparedAttachments = computed(() =>
   gap: 14px;
   padding: 22px 24px;
   border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(14, 24, 44, 0.94), rgba(8, 14, 28, 0.96));
-  border: 1px solid rgba(56, 189, 248, 0.14);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .agent-report__section-head {
@@ -431,7 +430,7 @@ const preparedAttachments = computed(() =>
   gap: 12px;
   align-items: center;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.10);
+  border-bottom: 1px solid var(--line-medium);
 }
 
 .agent-report__section-index {
@@ -441,9 +440,9 @@ const preparedAttachments = computed(() =>
   width: 1.9rem;
   height: 1.9rem;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.16);
-  border: 1px solid rgba(34, 211, 238, 0.32);
-  color: #67e8f9;
+  background: #f1f5f9;
+  border: 1px solid var(--line-medium);
+  color: var(--text-main);
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -453,7 +452,7 @@ const preparedAttachments = computed(() =>
   font-size: 1.2rem;
   letter-spacing: -0.01em;
   font-weight: 700;
-  color: #b7ecff;
+  color: var(--text-main);
   margin: 0;
 }
 

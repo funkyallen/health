@@ -112,7 +112,7 @@ const fallbackReason = computed(() => {
   <article class="panel inspector-panel" :class="{ 'inspector-panel--sos': device?.sos_active }">
     <div class="inspector-panel__head">
       <div>
-        <p class="section-eyebrow">Selected Elder</p>
+        <p class="section-eyebrow">已选对象</p>
         <h2>{{ summaryMeta.title }}</h2>
         <p class="panel-subtitle">{{ summaryMeta.subtitle }}</p>
       </div>
@@ -177,12 +177,12 @@ const fallbackReason = computed(() => {
 .inspector-panel__head h2 {
   margin: 0;
   font-family: var(--font-display);
-  color: #e2f0ff;
+  color: var(--text-main);
 }
 
 .panel-subtitle {
   margin: 8px 0 0;
-  color: #6ea8c8;
+  color: var(--text-sub);
   line-height: 1.6;
 }
 
@@ -190,12 +190,12 @@ const fallbackReason = computed(() => {
   min-width: 82px;
   padding: 12px 14px;
   border-radius: 18px;
-  background: rgba(34, 211, 238, 0.1);
-  color: #22d3ee;
+  background: #f1f5f9;
+  color: var(--brand);
   text-align: center;
   font-size: 1.18rem;
   font-weight: 700;
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  border: 1px solid var(--line-medium);
 }
 
 .inspector-panel__sos-banner {
@@ -219,18 +219,18 @@ const fallbackReason = computed(() => {
   gap: 6px;
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(13, 20, 38, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.1);
+  background: #f8fafc;
+  border: 1px solid var(--line-medium);
 }
 
 .score-breakdown-card span {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .score-breakdown-card strong {
-  color: #c8e0f4;
+  color: var(--text-main);
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -239,10 +239,10 @@ const fallbackReason = computed(() => {
   margin: 0;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(34, 211, 238, 0.06);
-  color: #6ea8c8;
+  background: #f8fafc;
+  color: var(--text-sub);
   line-height: 1.7;
-  border: 1px solid rgba(34, 211, 238, 0.1);
+  border: 1px solid var(--line-medium);
 }
 
 .inspector-panel__tags {
@@ -254,23 +254,23 @@ const fallbackReason = computed(() => {
 .signal-chip {
   padding: 7px 12px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.1);
-  color: #22d3ee;
+  background: #eff6ff;
+  color: var(--brand);
   font-size: 0.82rem;
   font-weight: 600;
-  border: 1px solid rgba(34, 211, 238, 0.18);
+  border: 1px solid var(--line-medium);
 }
 
 .signal-chip--sos {
-  background: rgba(248, 113, 122, 0.12);
-  color: #f87171;
+  background: #fef2f2;
+  color: #ef4444;
   border-color: rgba(248, 113, 122, 0.24);
 }
 
 .signal-chip.muted {
-  background: rgba(255, 255, 255, 0.04);
-  color: #4d7a94;
-  border-color: rgba(56, 189, 248, 0.08);
+  background: #f8fafc;
+  color: var(--text-sub);
+  border-color: var(--line-medium);
 }
 
 .reason-list {
@@ -278,7 +278,7 @@ const fallbackReason = computed(() => {
   padding-left: 18px;
   display: grid;
   gap: 10px;
-  color: #c8e0f4;
+  color: var(--text-sub);
   line-height: 1.7;
 }
 

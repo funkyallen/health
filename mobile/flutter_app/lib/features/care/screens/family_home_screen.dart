@@ -11,6 +11,7 @@ import '../../health/screens/device_detail_screen.dart';
 import '../../settings/screens/server_settings_screen.dart';
 import '../../voice/screens/voice_screen.dart';
 import '../models/care_profile_model.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/care_provider.dart';
 
 class FamilySubjectCardViewModel {
@@ -56,12 +57,12 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     final careProvider = context.watch<CareProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text(
           '家人守护',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textMain,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -72,7 +73,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           _buildAlarmAction(context),
           const LogoutAction(),
           IconButton(
-            icon: const Icon(Icons.settings_ethernet, color: Colors.white70),
+            icon: const Icon(Icons.settings_ethernet, color: AppColors.textSub),
             onPressed: () {
               Navigator.push(
                 context,
@@ -84,7 +85,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+            icon: const Icon(Icons.refresh, color: AppColors.textSub),
             onPressed: () => careProvider.fetchProfile(),
           ),
         ],
@@ -102,7 +103,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     return Stack(
       children: <Widget>[
         IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.white),
+          icon: const Icon(Icons.notifications_none, color: AppColors.textMain),
           onPressed: () {
             Navigator.push(
               context,
@@ -132,7 +133,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   Widget _buildBody(CareProvider provider) {
     if (provider.status == CareLoadStatus.loading && provider.profile == null) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFF875A)),
+        child: CircularProgressIndicator(color: Color(0xFF2563EB)),
       );
     }
 
@@ -143,7 +144,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           children: <Widget>[
             Text(
               provider.errorMessage ?? '加载失败',
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: AppColors.textSub),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -217,7 +218,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
               '当前还没有关联的老人监护对象',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textMain,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -226,7 +227,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             Text(
               '等老人账号与家庭账号建立关联后，这里会显示对应的健康监测对象和设备状态。',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, height: 1.5),
+              style: TextStyle(color: AppColors.textSub, height: 1.5),
             ),
           ],
         ),
@@ -260,20 +261,21 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFF875A).withValues(alpha: 0.2),
+          color: AppColors.border,
         ),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: const Row(
         children: <Widget>[
-          Icon(Icons.podcasts, color: Color(0xFFFF875A)),
+          Icon(Icons.podcasts, color: AppColors.primary),
           SizedBox(width: 12),
           Expanded(
             child: Text(
               '已开启自动刷新，会持续同步家庭关注对象的最新监测状态。',
-              style: TextStyle(color: Colors.white70, height: 1.4),
+              style: TextStyle(color: AppColors.textSub, height: 1.4),
             ),
           ),
         ],
@@ -287,7 +289,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
       child: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.textMain,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
@@ -305,7 +307,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     final healthy = (healthScore ?? 0) >= 80;
 
     return Card(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
@@ -330,7 +332,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  const Icon(Icons.watch, color: Color(0xFFFF875A)),
+                  const Icon(Icons.watch, color: AppColors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -339,15 +341,16 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                         Text(
                           subject.subjectName,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textMain,
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${subject.apartment} · ${metric.deviceName} · ${metric.deviceMac}',
                           style: const TextStyle(
-                            color: Colors.white54,
+                            color: AppColors.textSub,
                             fontSize: 12,
                           ),
                         ),
@@ -406,7 +409,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
 
   Widget _buildNoDeviceCard(FamilySubjectCardViewModel subject) {
     return Card(
-      color: Colors.white.withValues(alpha: 0.04),
+      color: AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -416,7 +419,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                const Icon(Icons.person_outline, color: Color(0xFF6FD3FF)),
+                const Icon(Icons.person_outline, color: AppColors.secondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -425,7 +428,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                       Text(
                         subject.subjectName,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textMain,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -433,7 +436,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                       Text(
                         subject.apartment,
                         style: const TextStyle(
-                          color: Colors.white54,
+                          color: AppColors.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -452,7 +455,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                   child: const Text(
                     '无设备',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: AppColors.textSub,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -463,7 +466,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             const SizedBox(height: 14),
             const Text(
               '当前还没有绑定手环，绑定后即可查看实时指标、异常告警和趋势曲线。',
-              style: TextStyle(color: Colors.white70, height: 1.5),
+              style: TextStyle(color: AppColors.textSub, height: 1.5),
             ),
           ],
         ),
@@ -474,18 +477,18 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   Widget _buildMetricItem(IconData icon, String label, String value) {
     return Column(
       children: <Widget>[
-        Icon(icon, size: 20, color: Colors.white54),
+        Icon(icon, size: 20, color: AppColors.textMuted),
         const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.textMain,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white30, fontSize: 10),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
         ),
       ],
     );
@@ -507,7 +510,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: <Color>[
-              const Color(0xFFFF875A).withValues(alpha: 0.1),
+              const Color(0xFF2563EB).withValues(alpha: 0.1),
               Colors.transparent,
             ],
             begin: Alignment.topLeft,
@@ -515,12 +518,12 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFFFF875A).withValues(alpha: 0.2),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.2),
           ),
         ),
         child: const Row(
           children: <Widget>[
-            Icon(Icons.mic_none, color: Color(0xFFFF875A), size: 24),
+            Icon(Icons.mic_none, color: AppColors.primary, size: 24),
             SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -529,19 +532,19 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                   Text(
                     '智能语音交互',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   Text(
                     '语音转文字与合成播报',
-                    style: TextStyle(color: Colors.white30, fontSize: 12),
+                    style: TextStyle(color: AppColors.textSub, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.white24),
+            Icon(Icons.chevron_right, color: AppColors.textMuted),
           ],
         ),
       ),
@@ -576,21 +579,22 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
           ),
           child: Row(
             children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF875A).withValues(alpha: 0.2),
+                  color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.auto_awesome,
-                  color: Color(0xFFFF875A),
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -601,7 +605,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                     const Text(
                       '向守护助手提问',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textMain,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -612,7 +616,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                           ? '支持围绕监测趋势、异常波动和家属跟进行动提问'
                           : '至少有一位老人绑定手环后，才能结合实时监测数据进行分析',
                       style: const TextStyle(
-                        color: Colors.white54,
+                        color: AppColors.textSub,
                         fontSize: 12,
                       ),
                     ),
@@ -621,7 +625,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
               ),
               const Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white24,
+                color: AppColors.textMuted,
                 size: 16,
               ),
             ],

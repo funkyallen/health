@@ -142,6 +142,7 @@ def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]
     user_service = get_user_service()
     demo_directory = get_care_service().get_demo_directory()
     demo_elder_by_device_mac = {}
+    demo_elder_by_id = {elder.id: elder for elder in demo_directory.elders}
     for elder in demo_directory.elders:
         for mac in elder.device_macs or ([elder.device_mac] if elder.device_mac else []):
             if mac:
@@ -150,7 +151,7 @@ def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]
     metrics: list[CareAccessDeviceMetric] = []
     for device in sorted(devices, key=lambda item: item.created_at):
         elder = user_service.get_user(device.user_id) if device.user_id else None
-        demo_elder = demo_elder_by_device_mac.get(device.mac_address)
+        demo_elder = demo_elder_by_device_mac.get(device.mac_address) or demo_elder_by_id.get(device.user_id or "")
         metrics.append(
             CareAccessDeviceMetric(
                 device_mac=device.mac_address,
@@ -625,11 +626,20 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
     family_names_by_id = {family.id: family.name for family in directory.families}
     elder_by_device_mac: dict[str, object] = {}
     elder_by_id = {elder.id: elder for elder in directory.elders}
+    bound_visible_device_by_elder_id: dict[str, DeviceRecord] = {}
 
     for elder in directory.elders:
         for mac in elder.device_macs or ([elder.device_mac] if elder.device_mac else []):
             if mac and _device_visible_for_bound_dashboard(device_by_mac.get(mac)):
                 elder_by_device_mac[mac] = elder
+    for device in devices:
+        if (
+            device.user_id
+            and device.user_id in elder_by_id
+            and device.bind_status == DeviceBindStatus.BOUND
+            and _device_visible_for_bound_dashboard(device)
+        ):
+            bound_visible_device_by_elder_id[device.user_id] = device
 
     active_alarm_counts = Counter(alarm.device_mac for alarm in alarms if not alarm.acknowledged)
     active_sos_by_mac: dict[str, AlarmRecord] = {}
@@ -645,17 +655,20 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
     device_statuses: list[CommunityDashboardDeviceItem] = []
 
     for elder in directory.elders:
-        device_mac = next(
-            (
-                mac
-                for mac in elder.device_macs
-                if mac and _device_visible_for_bound_dashboard(device_by_mac.get(mac))
-            ),
-            None,
-        ) or (
-            elder.device_mac
-            if elder.device_mac and _device_visible_for_bound_dashboard(device_by_mac.get(elder.device_mac))
-            else None
+        bound_device = bound_visible_device_by_elder_id.get(elder.id)
+        device_mac = bound_device.mac_address if bound_device else (
+            next(
+                (
+                    mac
+                    for mac in elder.device_macs
+                    if mac and _device_visible_for_bound_dashboard(device_by_mac.get(mac))
+                ),
+                None,
+            ) or (
+                elder.device_mac
+                if elder.device_mac and _device_visible_for_bound_dashboard(device_by_mac.get(elder.device_mac))
+                else None
+            )
         )
         device = next((item for item in devices if item.mac_address == device_mac), None) if device_mac else None
         sample = latest_by_mac.get(device_mac) if _device_can_show_live_dashboard_data(device) else None
@@ -710,7 +723,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         )
 
     for device in devices:
-        elder = elder_by_device_mac.get(device.mac_address)
+        elder = elder_by_device_mac.get(device.mac_address) or elder_by_id.get(device.user_id or "")
         sample = latest_by_mac.get(device.mac_address) if _device_can_show_live_dashboard_data(device) else None
         effective_ingest_mode = get_effective_device_ingest_mode(device.mac_address, device.ingest_mode)
         active_alarm_count = active_alarm_counts.get(device.mac_address, 0)

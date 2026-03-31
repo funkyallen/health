@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../widgets/logout_action.dart';
 import '../models/health_model.dart';
 import '../providers/health_provider.dart';
@@ -53,17 +54,17 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     final healthProvider = context.watch<HealthProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           '实时监测: ${widget.deviceMac}',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Colors.white70),
+            icon: const Icon(Icons.history, color: AppColors.textSub),
             onPressed: () {
               Navigator.push(
                 context,
@@ -96,10 +97,10 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
           height: 12,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: provider.isWsConnected ? Colors.greenAccent : Colors.redAccent,
+            color: provider.isWsConnected ? AppColors.success : AppColors.error,
             boxShadow: [
               if (provider.isWsConnected)
-                const BoxShadow(color: Colors.greenAccent, blurRadius: 8, spreadRadius: 1),
+                BoxShadow(color: AppColors.success.withOpacity(0.4), blurRadius: 8, spreadRadius: 1),
             ],
           ),
         ),
@@ -109,7 +110,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
 
   Widget _buildBody(HealthProvider provider) {
     if (provider.status == HealthStatus.loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF875A)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
     }
 
     if (provider.status == HealthStatus.error) {
@@ -117,9 +118,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
-            Text(provider.errorMessage ?? '加载失败', style: const TextStyle(color: Colors.white70)),
+            Text(provider.errorMessage ?? '加载失败', style: const TextStyle(color: AppColors.textSub)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => provider.init(),
@@ -132,7 +133,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
 
     final data = provider.data;
     if (data == null) {
-      return const Center(child: Text('暂无实时数据', style: TextStyle(color: Colors.white24)));
+      return const Center(child: Text('暂无实时数据', style: TextStyle(color: AppColors.textMuted)));
     }
 
     return SingleChildScrollView(
@@ -152,24 +153,24 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withValues(alpha: 0.1),
+                  color: AppColors.error.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                    Icon(Icons.warning_amber_rounded, color: AppColors.error),
                     SizedBox(width: 12),
                     Text(
                       '紧急求助（SOS）已触发',
-                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
             ),
           const SizedBox(height: 24),
-          const Text('实时数据会自动刷新，没有新包时会保留最近一次有效样本', style: TextStyle(color: Colors.white24, fontSize: 12)),
+          const Text('实时数据会自动刷新，没有新包时会保留最近一次有效样本', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
         ],
       ),
     );
@@ -179,12 +180,19 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF875A), Color(0xFFFF5F2E)],
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,12 +220,12 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
       runSpacing: 8,
       alignment: WrapAlignment.spaceEvenly,
       children: [
-        _buildChip(Icons.favorite, '心率', _formatNumber(data.heartRate), 'bpm', Colors.redAccent),
-        _buildChip(Icons.water_drop, '血氧', _formatNumber(data.bloodOxygen), '%', Colors.blueAccent),
-        _buildChip(Icons.speed, '血压', data.bloodPressure ?? '--', 'mmHg', Colors.purpleAccent),
-        _buildChip(Icons.thermostat, '体温', _formatNumber(data.temperature, fractionDigits: 1), '°C', Colors.orangeAccent),
-        _buildChip(Icons.directions_walk, '步数', _formatNumber(data.steps), '步', Colors.greenAccent),
-        _buildChip(Icons.battery_charging_full, '电量', _formatNumber(data.battery), '%', Colors.tealAccent),
+        _buildChip(Icons.favorite, '心率', _formatNumber(data.heartRate), 'bpm', AppColors.error),
+        _buildChip(Icons.water_drop, '血氧', _formatNumber(data.bloodOxygen), '%', AppColors.primary),
+        _buildChip(Icons.speed, '血压', data.bloodPressure ?? '--', 'mmHg', Colors.purple),
+        _buildChip(Icons.thermostat, '体温', _formatNumber(data.temperature, fractionDigits: 1), '°C', AppColors.warning),
+        _buildChip(Icons.directions_walk, '步数', _formatNumber(data.steps), '步', AppColors.success),
+        _buildChip(Icons.battery_charging_full, '电量', _formatNumber(data.battery), '%', Colors.teal),
       ],
     );
   }
@@ -227,9 +235,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
       width: (MediaQuery.of(context).size.width - 48) / 3,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -239,7 +247,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+              Text(label, style: const TextStyle(color: AppColors.textSub, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 6),
@@ -248,11 +256,11 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold)),
               if (unit.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 2),
-                  child: Text(unit, style: const TextStyle(color: Colors.white30, fontSize: 9)),
+                  child: Text(unit, style: const TextStyle(color: AppColors.textMuted, fontSize: 9)),
                 ),
             ],
           ),
@@ -289,13 +297,13 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
 
     return Column(
       children: [
-        _buildSingleChart('心率曲线', hrSpots, Colors.redAccent, 40, 180, 'bpm'),
+        _buildSingleChart('心率曲线', hrSpots, AppColors.error, 40, 180, 'bpm'),
         const SizedBox(height: 16),
-        _buildSingleChart('血氧曲线', boSpots, Colors.blueAccent, 80, 100, '%'),
+        _buildSingleChart('血氧曲线', boSpots, AppColors.primary, 80, 100, '%'),
         const SizedBox(height: 16),
-        _buildDoubleChart('血压曲线（收缩/舒张）', sbpSpots, dbpSpots, Colors.purpleAccent, Colors.deepPurpleAccent, 40, 200, 'mmHg'),
+        _buildDoubleChart('血压曲线（收缩/舒张）', sbpSpots, dbpSpots, Colors.purple, Colors.deepPurple, 40, 200, 'mmHg'),
         const SizedBox(height: 16),
-        _buildSingleChart('体温曲线', tempSpots, Colors.orangeAccent, 35, 42, '°C'),
+        _buildSingleChart('体温曲线', tempSpots, AppColors.warning, 35, 42, '°C'),
       ],
     );
   }
@@ -325,7 +333,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                       reservedSize: 36,
                       getTitlesWidget: (val, meta) => Text(
                         val.toInt().toString(),
-                        style: const TextStyle(color: Colors.white30, fontSize: 10),
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                       ),
                     ),
                   ),
@@ -381,7 +389,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                       reservedSize: 36,
                       getTitlesWidget: (val, meta) => Text(
                         val.toInt().toString(),
-                        style: const TextStyle(color: Colors.white30, fontSize: 10),
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                       ),
                     ),
                   ),
@@ -416,7 +424,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     return Center(
       child: Text(
         message,
-        style: const TextStyle(color: Colors.white38, fontSize: 12),
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
     );
   }
@@ -426,9 +434,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
       height: 180,
       padding: const EdgeInsets.only(top: 12, right: 16, left: 4, bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,9 +445,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
             padding: const EdgeInsets.only(left: 12, bottom: 8),
             child: Row(
               children: [
-                const Icon(Icons.show_chart, color: Colors.white54, size: 14),
+                const Icon(Icons.show_chart, color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                Text(title, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
               ],
             ),
           ),

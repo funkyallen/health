@@ -34,7 +34,7 @@ class LogoutAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: '退出账号',
-      icon: const Icon(Icons.logout, color: Colors.white70),
+      icon: const Icon(Icons.logout, color: const Color(0xFF64748B)),
       onPressed: () => _handleLogout(context),
     );
   }

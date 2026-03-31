@@ -6,6 +6,7 @@ import '../../../core/network/server_endpoint_config.dart';
 import '../../alarm/providers/alarm_provider.dart';
 import '../../care/providers/care_provider.dart';
 import '../../../widgets/logout_action.dart';
+import '../../../core/theme/app_colors.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
@@ -110,12 +111,12 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     final config = context.watch<ServerEndpointConfig>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('服务器设置', style: TextStyle(color: Colors.white)),
+        title: const Text('服务器设置', style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.textMain),
         actions: const [LogoutAction()],
       ),
       body: SingleChildScrollView(
@@ -130,8 +131,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               _buildFieldLabel('协议'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: _scheme,
-                dropdownColor: const Color(0xFF10262E),
+                value: _scheme,
+                dropdownColor: AppColors.surface,
                 decoration: _inputDecoration(),
                 items: const [
                   DropdownMenuItem(value: 'http', child: Text('HTTP')),
@@ -151,7 +152,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _hostController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
                 decoration: _inputDecoration(hintText: '例如 192.168.1.23'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -165,7 +166,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _portController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: _inputDecoration(hintText: '8000'),
@@ -184,7 +185,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     child: OutlinedButton(
                       onPressed: _isTesting || _isSaving ? null : _testConnection,
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: _isTesting
@@ -201,8 +202,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     child: ElevatedButton(
                       onPressed: _isSaving || _isTesting ? null : _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF875A),
-                        foregroundColor: const Color(0xFF08161B),
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: _isSaving
@@ -228,13 +229,13 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _testResult!.contains('成功')
-                          ? Colors.greenAccent.withOpacity(0.35)
-                          : Colors.orangeAccent.withOpacity(0.35),
+                          ? AppColors.success
+                          : AppColors.warning,
                     ),
                   ),
                   child: Text(
                     _testResult!,
-                    style: const TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: AppColors.textMain),
                   ),
                 ),
               ],
@@ -250,26 +251,27 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             '当前后端地址',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             config.origin,
-            style: const TextStyle(color: Color(0xFFFF875A), fontSize: 15),
+            style: const TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           const Text(
-            'Android 真机接入同一局域网时，请把这里改成服务器所在电脑的局域网 IP，例如 192.168.1.23。',
-            style: TextStyle(color: Colors.white54, height: 1.5),
+            'Android 真机接入同一局域网时，请把这里改成运行 python run.py 后在终端屏幕上提示的服务端局域网 IP。',
+            style: TextStyle(color: AppColors.textSub, height: 1.5),
           ),
         ],
       ),
@@ -279,35 +281,35 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+      style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.w600),
     );
   }
 
   InputDecoration _inputDecoration({String? hintText}) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: Colors.white24),
+      hintStyle: const TextStyle(color: AppColors.textMuted),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.04),
+      fillColor: AppColors.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFFF875A)),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
     );
   }

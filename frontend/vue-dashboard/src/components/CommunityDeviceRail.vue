@@ -81,7 +81,7 @@ onMounted(() => {
   <section class="device-rail">
     <div class="device-rail__head">
       <div>
-        <p class="section-eyebrow">Community Subjects</p>
+        <p class="section-eyebrow">社区监护总览</p>
         <h2>老人监护对象</h2>
       </div>
       <small>先按老人查看绑定状态；只有已绑定设备的老人，点进去后才会加载实时曲线和监护数据。</small>
@@ -129,14 +129,14 @@ onMounted(() => {
 
 .device-rail__head h2 {
   margin: 0;
-  color: #e2f0ff;
+  color: var(--text-main);
   font-family: var(--font-display);
 }
 
 .device-rail__head small,
 .device-pill small,
 .device-pill__meta {
-  color: #4d7a94;
+  color: var(--text-sub);
   font-size: 0.82rem;
 }
 
@@ -157,23 +157,24 @@ onMounted(() => {
   gap: 8px;
   padding: 14px 16px;
   border-radius: 20px;
-  border: 1px solid rgba(56, 189, 248, 0.12);
-  background: rgba(13, 20, 38, 0.96);
+  border: 1px solid var(--line-medium);
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .device-pill:hover,
 .device-pill--active {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
 }
 
 .device-pill--active {
-  border-color: rgba(34, 211, 238, 0.4);
-  background: rgba(18, 28, 52, 0.98);
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.14), 0 14px 28px rgba(0, 0, 0, 0.28);
+  border-color: var(--brand);
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.14), 0 14px 28px rgba(37, 99, 235, 0.12);
 }
 
 .device-pill__top {
@@ -184,7 +185,7 @@ onMounted(() => {
 }
 
 .device-pill strong {
-  color: #c8e0f4;
+  color: var(--text-main);
   font-size: 1rem;
 }
 
@@ -197,74 +198,74 @@ onMounted(() => {
 }
 
 .no-device {
-  border-color: rgba(148, 163, 184, 0.22);
-  background: rgba(14, 19, 32, 0.96);
+  border-color: var(--line-medium);
+  background: #f8fafc;
 }
 
 .no-device .device-pill__state {
   background: rgba(148, 163, 184, 0.14);
-  color: #cbd5e1;
+  color: #64748b;
 }
 
 .offline {
   border-color: rgba(96, 165, 250, 0.24);
-  background: rgba(9, 18, 34, 0.96);
+  background: #f0f9ff;
 }
 
 .offline .device-pill__state {
-  background: rgba(96, 165, 250, 0.14);
-  color: #60a5fa;
+  background: rgba(56, 189, 248, 0.14);
+  color: #0284c7;
 }
 
 .pending {
-  border-color: rgba(251, 191, 36, 0.22);
-  background: rgba(20, 16, 8, 0.96);
+  border-color: rgba(251, 191, 36, 0.3);
+  background: #fffbeb;
 }
 
 .pending .device-pill__state {
-  background: rgba(251, 191, 36, 0.14);
-  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.18);
+  color: #b45309;
 }
 
 .sos {
-  border-color: rgba(248, 113, 122, 0.5);
-  background: rgba(28, 10, 12, 0.98);
-  box-shadow: 0 0 0 1px rgba(248, 113, 122, 0.14), 0 12px 28px rgba(0, 0, 0, 0.36);
+  border-color: rgba(239, 68, 68, 0.5);
+  background: #fef2f2;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 12px 28px rgba(239, 68, 68, 0.16);
 }
 
 .sos .device-pill__state {
-  background: rgba(248, 113, 122, 0.16);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
 }
 
 .risk-high {
-  border-color: rgba(248, 113, 122, 0.24);
-  background: rgba(22, 10, 12, 0.96);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: #fef2f2;
 }
 
 .risk-high .device-pill__state {
-  background: rgba(248, 113, 122, 0.14);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
 }
 
 .risk-medium {
-  border-color: rgba(251, 146, 60, 0.24);
-  background: rgba(20, 14, 8, 0.96);
+  border-color: rgba(245, 158, 11, 0.3);
+  background: #fffbeb;
 }
 
 .risk-medium .device-pill__state {
-  background: rgba(251, 146, 60, 0.14);
-  color: #fb923c;
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
 }
 
 .risk-low {
-  border-color: rgba(52, 211, 153, 0.18);
-  background: rgba(8, 18, 14, 0.96);
+  border-color: rgba(16, 185, 129, 0.24);
+  background: #f0fdf4;
 }
 
 .risk-low .device-pill__state {
-  background: rgba(52, 211, 153, 0.12);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
 }
 
 @media (max-width: 760px) {

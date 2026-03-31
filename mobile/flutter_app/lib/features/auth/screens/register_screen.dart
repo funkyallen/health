@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../models/register_models.dart';
 import '../providers/auth_provider.dart';
 
@@ -47,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _validate() {
     if (_nameCtrl.text.trim().isEmpty) return 'ËØ∑ËæìÂÖ•ÂßìÂêç';
     if (_selectedRole == RegisterRole.elder) {
-      if (_phoneCtrl.text.trim().isEmpty) return 'ËØ∑ËæìÂÖ•ÊâãÊú∫Âè∑Ôºà‰Ωú‰∏∫ÁôªÂΩïË¥¶Âè∑Ôºâ';
+      if (_phoneCtrl.text.trim().isEmpty) return 'ËØ∑ËæìÂÖ•ÊâãÊú∫Âè∑';
       final age = int.tryParse(_ageCtrl.text.trim());
       if (age == null || age < 50 || age > 120) return 'ËØ∑ËæìÂÖ•ÊúâÊïàÂπ¥ÈæÑÔºà50-120Ôºâ';
       if (_apartmentCtrl.text.trim().isEmpty) return 'ËØ∑ËæìÂÖ•ÊàøÈó¥Âè∑';
@@ -63,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (error != null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+        SnackBar(content: Text(error), backgroundColor: AppColors.error),
       );
       return;
     }
@@ -118,14 +119,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1C26),
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Ê≥®ÂÜåÊàêÂäü', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Ê≥®ÂÜåÊàêÂäü', style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Ë¥¶Âè∑Â∑≤ÂàõÂª∫ÔºåÂèØ‰ª•Áõ¥Êé•ÁôªÂΩï„ÄÇ', style: TextStyle(color: Colors.white70)),
+            const Text('Ë¥¶Âè∑Â∑≤ÂàõÂª∫ÔºåÂèØ‰ª•Áõ¥Êé•ÁôªÂΩï„ÄÇ', style: TextStyle(color: AppColors.textSub)),
             const SizedBox(height: 16),
             if (registered != null) ...[
               _infoRow('ÂßìÂêç', registered.name),
@@ -137,13 +139,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF875A).withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFF875A).withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
               ),
               child: Text(
                 'ÁôªÂΩïË¥¶Âè∑Ôºö$loginAccount',
-                style: const TextStyle(color: Color(0xFFFF875A), fontWeight: FontWeight.bold),
+                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -154,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('ÂéªÁôªÂΩï', style: TextStyle(color: Color(0xFFFF875A), fontWeight: FontWeight.bold)),
+            child: const Text('ÂéªÁôªÂΩï', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -166,8 +168,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Text('$labelÔºö', style: const TextStyle(color: Colors.white54, fontSize: 13)),
-          Expanded(child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 13))),
+          Text('$labelÔºö', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          Expanded(child: Text(value, style: const TextStyle(color: AppColors.textMain, fontSize: 13, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -176,12 +178,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF08161B),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white70),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textMain),
           onPressed: () {
             if (_step == 1) {
               setState(() => _step = 0);
@@ -192,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         title: Text(
           _step == 0 ? 'ÈÄâÊã©Ê≥®ÂÜåÁ±ªÂûã' : 'Â°´ÂÜôÊ≥®ÂÜå‰ø°ÊÅØ',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
         ),
       ),
       body: AnimatedSwitcher(
@@ -211,23 +213,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('«Î—°‘Òƒ˙µƒ…Ì∑›',
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text('ÈÄâÊã©ÊÇ®ÁöÑË∫´‰ªΩ',
+              style: TextStyle(color: AppColors.textMain, fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('≤ªÕ¨…Ì∑›”µ”–≤ªÕ¨µƒπ¶ƒ‹∫Õ ˝æ› ”Ω«',
-              style: TextStyle(color: Colors.white54, fontSize: 14)),
+          const Text('‰∏çÂêåËßíËâ≤Êã•Êúâ‰∏çÂêåÁöÑÁÆ°ÁêÜÊùÉÈôêÂíåËßÜËßíÔºåËØ∑Ê†πÊçÆÂÆûÈôÖÊÉÖÂÜµÈÄâÊã©„ÄÇ',
+              style: TextStyle(color: AppColors.textSub, fontSize: 14)),
           const SizedBox(height: 32),
           ...RegisterRole.values.map(_buildRoleCard),
           const Spacer(),
           ElevatedButton(
             onPressed: () => setState(() => _step = 1),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF875A),
-              foregroundColor: const Color(0xFF08161B),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
             ),
-            child: const Text('œ¬“ª≤Ω', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text('‰∏ã‰∏ÄÊ≠•', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -240,38 +243,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onTap: () => setState(() => _selectedRole = role),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF875A).withOpacity(0.12) : Colors.white.withOpacity(0.04),
+          color: isSelected ? AppColors.primary.withOpacity(0.08) : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF875A).withOpacity(0.6) : Colors.white.withOpacity(0.08),
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected 
+            ? [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))]
+            : [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              width: 56, height: 56,
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFF875A).withOpacity(0.2) : Colors.white.withOpacity(0.06),
+                color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.background,
                 shape: BoxShape.circle,
               ),
-              child: Icon(_roleIcon(role), color: isSelected ? const Color(0xFFFF875A) : Colors.white38, size: 22),
+              child: Icon(_roleIcon(role), color: isSelected ? AppColors.primary : AppColors.textMuted, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(role.label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(role.label, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textMain, fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 4),
-                  Text(role.description, style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                  Text(role.description, style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
                 ],
               ),
             ),
-            if (isSelected) const Icon(Icons.check_circle, color: Color(0xFFFF875A), size: 20),
+            if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary, size: 24),
           ],
         ),
       ),
@@ -296,90 +302,99 @@ class _RegisterScreenState extends State<RegisterScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF875A).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFF875A).withOpacity(0.3)),
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_roleIcon(_selectedRole), color: const Color(0xFFFF875A), size: 16),
-                const SizedBox(width: 8),
-                Text("◊¢≤·¿‡–Õ£∫${_selectedRole.label}", style: const TextStyle(color: Color(0xFFFF875A), fontWeight: FontWeight.w600)),
+                Icon(_roleIcon(_selectedRole), color: AppColors.primary, size: 20),
+                const SizedBox(width: 12),
+                Text("ÂΩìÂâçÊ≥®ÂÜåÔºö${_selectedRole.label}", style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildTextField(_nameCtrl, "–’√˚", Icons.person_outline, hint: "«Î ‰»Î’Ê µ–’√˚"),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
+          _buildTextField(_nameCtrl, "ÁúüÂÆûÂßìÂêç", Icons.person_outline, hint: "ËØ∑ËæìÂÖ•ÊÇ®ÁöÑÁúüÂÆûÂßìÂêç"),
+          const SizedBox(height: 20),
           if (_selectedRole == RegisterRole.elder) ...[
-            _buildTextField(_phoneCtrl, " ÷ª˙∫≈£®µ«¬º’À∫≈£©", Icons.phone_outlined, hint: " ÷ª˙∫≈Ω´◊˜Œ™µ«¬º’À∫≈", keyboardType: TextInputType.phone),
-            const SizedBox(height: 16),
-            _buildTextField(_ageCtrl, "ƒÍ¡‰", Icons.cake_outlined, hint: "«Î ‰»ÎƒÍ¡‰£®50-120£©", keyboardType: TextInputType.number),
-            const SizedBox(height: 16),
-            _buildTextField(_apartmentCtrl, "∑øº‰∫≈", Icons.home_outlined, hint: "¿˝»Á A-302"),
-            const SizedBox(height: 16),
+            _buildTextField(_phoneCtrl, "ÊâãÊú∫Âè∑", Icons.phone_outlined, hint: "ËØ∑ËæìÂÖ•ÊâãÊú∫Âè∑Ôºà‰Ωú‰∏∫ÁôªÂΩïË¥¶Âè∑Ôºâ", keyboardType: TextInputType.phone),
+            const SizedBox(height: 20),
+            _buildTextField(_ageCtrl, "Âπ¥ÈæÑ", Icons.cake_outlined, hint: "ËØ∑ËæìÂÖ•Âπ¥ÈæÑÔºà50-120 Â≤ÅÔºâ", keyboardType: TextInputType.number),
+            const SizedBox(height: 20),
+            _buildTextField(_apartmentCtrl, "ÊàøÈó¥Âè∑", Icons.home_outlined, hint: "‰æãÂ¶Ç A-302"),
+            const SizedBox(height: 20),
           ] else ...[
-            _buildTextField(_phoneCtrl, " ÷ª˙∫≈", Icons.phone_outlined, hint: "«Î ‰»Î ÷ª˙∫≈", keyboardType: TextInputType.phone),
-            const SizedBox(height: 16),
-            _buildTextField(_loginUsernameCtrl, "µ«¬º’À∫≈£®ø…—°£©", Icons.account_circle_outlined, hint: "¡Ùø’‘Ú“‘ ÷ª˙∫≈◊˜Œ™µ«¬º’À∫≈"),
-            const SizedBox(height: 16),
+            _buildTextField(_phoneCtrl, "ÊâãÊú∫Âè∑", Icons.phone_outlined, hint: "ËØ∑ËæìÂÖ•ÊÇ®ÁöÑÂ∏∏Áî®ÊâãÊú∫Âè∑", keyboardType: TextInputType.phone),
+            const SizedBox(height: 20),
+            _buildTextField(_loginUsernameCtrl, "ÁôªÂΩïË¥¶Âè∑", Icons.account_circle_outlined, hint: "ÂèØÈÄâÔºå‰∏çÂ°´ÂàôÈªòËÆ§‰ΩøÁî®ÊâãÊú∫Âè∑ÁôªÂΩï"),
+            const SizedBox(height: 20),
           ],
           if (_selectedRole == RegisterRole.family) ...[
             _buildRelationshipSelector(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
           ],
-          TextField(
+          TextFormField(
             controller: _passwordCtrl,
             obscureText: _obscurePassword,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
-              labelText: "√‹¬Î",
-              labelStyle: const TextStyle(color: Colors.white54),
-              hintText: "÷¡…Ÿ 6 Œª",
-              hintStyle: const TextStyle(color: Colors.white24),
+              labelText: "ÂØÜÁ†Å",
+              labelStyle: const TextStyle(color: AppColors.textSub),
+              hintText: "ËØ∑ËæìÂÖ•Ëá≥Â∞ë 6 ‰ΩçÂØÜÁ†Å",
+              hintStyle: const TextStyle(color: AppColors.textMuted),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54),
+              fillColor: AppColors.surface,
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
               suffixIcon: IconButton(
-                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white38),
+                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.textMuted),
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
           ),
           if (authProvider.registerStatus == RegisterStatus.error && authProvider.registerError != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                color: AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withOpacity(0.3)),
               ),
-              child: Text(authProvider.registerError!, style: const TextStyle(color: Colors.redAccent, fontSize: 14)),
+              child: Row(
+                children: [
+                   const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                   const SizedBox(width: 8),
+                   Expanded(child: Text(authProvider.registerError!, style: const TextStyle(color: AppColors.error, fontSize: 14))),
+                ],
+              ),
             ),
           ],
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           ElevatedButton(
             onPressed: isSubmitting ? null : _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF875A),
-              foregroundColor: const Color(0xFF08161B),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+              shadowColor: AppColors.primary.withOpacity(0.4),
             ),
             child: isSubmitting
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF08161B)))
-                : const Text("ÕÍ≥…◊¢≤·", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                : const Text("Êèê‰∫§Ê≥®ÂÜå", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 16),
           Center(
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("“—”–’À∫≈£ø∑µªÿµ«¬º", style: TextStyle(color: Colors.white38)),
+              child: const Text("Â∑≤ÊúâË¥¶Âè∑ÔºüËøîÂõûÁôªÂΩï", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -388,19 +403,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String label, IconData icon, {String? hint, TextInputType keyboardType = TextInputType.text}) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelStyle: const TextStyle(color: AppColors.textSub),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white24),
+        hintStyle: const TextStyle(color: AppColors.textMuted),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        prefixIcon: Icon(icon, color: Colors.white54),
+        fillColor: AppColors.surface,
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+        prefixIcon: Icon(icon, color: AppColors.textMuted),
       ),
     );
   }
@@ -408,15 +424,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildRelationshipSelector() {
     return DropdownButtonFormField<String>(
       value: _relationship,
-      dropdownColor: const Color(0xFF0D1C26),
-      style: const TextStyle(color: Colors.white),
+      dropdownColor: AppColors.surface,
+      style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
       decoration: InputDecoration(
-        labelText: "”Î¿œ»Àµƒπÿœµ",
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelText: "ÊÇ®‰∏éËÄÅ‰∫∫ÁöÑÂÖ≥Á≥ª",
+        labelStyle: const TextStyle(color: AppColors.textSub),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        prefixIcon: const Icon(Icons.people_outline, color: Colors.white54),
+        fillColor: AppColors.surface,
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+        prefixIcon: const Icon(Icons.people_outline, color: AppColors.textMuted),
       ),
       items: _relationships.map((r) => DropdownMenuItem(value: r.$1, child: Text(r.$2))).toList(),
       onChanged: (v) => setState(() => _relationship = v ?? "daughter"),

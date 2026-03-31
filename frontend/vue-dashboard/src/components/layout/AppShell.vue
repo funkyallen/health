@@ -152,7 +152,7 @@ async function acknowledgePrimarySos() {
   <main class="app-shell" :class="{ 'app-shell--workspace': isCommunityWorkspace }">
     <aside v-if="isCommunityWorkspace" class="workspace-sidebar">
       <div class="workspace-sidebar__brand">
-        <p class="section-eyebrow">Community Workspace</p>
+        <p class="section-eyebrow">社区工作台</p>
         <h2>社区工作台</h2>
         <p class="subtle-copy">监护、拓扑、成员设备与智能体分区协作。</p>
       </div>

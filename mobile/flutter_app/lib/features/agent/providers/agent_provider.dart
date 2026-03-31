@@ -76,4 +76,49 @@ class AgentProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  Future<void> sendVoiceMessage(
+    List<int> audioBytes, {
+    String? deviceMac,
+    required String role,
+  }) async {
+    final userMessage = AgentMessage(role: 'user', content: '[语音消息]');
+    _messages.add(userMessage);
+
+    _status = AgentStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    final assistantMessage = AgentMessage(role: 'assistant', content: '');
+    _messages.add(assistantMessage);
+    notifyListeners();
+
+    try {
+      _status = AgentStatus.streaming;
+      notifyListeners();
+
+      await for (final delta in _repository.streamOmniAnalysis(
+        audioBytes,
+        deviceMac,
+        role: role,
+      )) {
+        assistantMessage.content += delta;
+        notifyListeners();
+      }
+
+      _status = AgentStatus.loaded;
+    } catch (_) {
+      _errorMessage = '语音分析失败，请稍后再试。';
+      _status = AgentStatus.error;
+      assistantMessage.content = '语音解析失败。';
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> ttsSpeak(String text) async {
+    // This is a placeholder for triggering TTS. 
+    // In a real app, we would call a TTS repository/service here.
+    debugPrint('TTS Speaking: $text');
+  }
 }

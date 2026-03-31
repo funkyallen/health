@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../../core/theme/app_colors.dart';
 
 class AgentMessageBubble extends StatelessWidget {
   final String text;
@@ -12,6 +13,7 @@ class AgentMessageBubble extends StatelessWidget {
   final String streamingLabel;
   final double fontSize;
   final bool compact;
+  final VoidCallback? onSpeak;
 
   const AgentMessageBubble({
     super.key,
@@ -25,29 +27,15 @@ class AgentMessageBubble extends StatelessWidget {
     required this.streamingLabel,
     this.fontSize = 16,
     this.compact = false,
+    this.onSpeak,
   });
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = Colors.white.withValues(alpha: compact ? 0.08 : 0.06);
-    final userGradientEnd = Color.lerp(accent, Colors.black, 0.35) ?? accent;
-    final assistantGradientEnd =
-        Color.lerp(surfaceColor, Colors.white, 0.08) ?? surfaceColor;
+    const surfaceColor = AppColors.surface;
 
     final bubbleDecoration = BoxDecoration(
-      gradient: LinearGradient(
-        colors: isUser
-            ? <Color>[
-                accent.withValues(alpha: 0.92),
-                userGradientEnd,
-              ]
-            : <Color>[
-                surfaceColor,
-                assistantGradientEnd,
-              ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
+      color: isUser ? accent : surfaceColor,
       borderRadius: BorderRadius.circular(compact ? 18 : 24).copyWith(
         topLeft: isUser
             ? const Radius.circular(18)
@@ -58,14 +46,14 @@ class AgentMessageBubble extends StatelessWidget {
       ),
       border: Border.all(
         color: isUser
-            ? accent.withValues(alpha: 0.45)
-            : Colors.white.withValues(alpha: 0.1),
+            ? accent
+            : AppColors.border,
       ),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.18),
-          blurRadius: compact ? 16 : 20,
-          offset: const Offset(0, 10),
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: compact ? 16 : 24,
+          offset: const Offset(0, 8),
         ),
       ],
     );
@@ -91,7 +79,20 @@ class AgentMessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  _buildLabel(isUser ? userLabel : assistantLabel),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildLabel(isUser ? userLabel : assistantLabel),
+                      if (!isUser && !isStreaming && onSpeak != null)
+                        IconButton(
+                          constraints: const BoxConstraints(),
+                          padding: EdgeInsets.zero,
+                          icon: Icon(Icons.volume_up_rounded, color: accent, size: 20),
+                          onPressed: onSpeak,
+                          tooltip: '语音播报',
+                        ),
+                    ],
+                  ),
                   SizedBox(height: compact ? 8 : 10),
                   MarkdownBody(
                     data: _normalizeMarkdown(text, isStreaming: isStreaming),
@@ -133,9 +134,9 @@ class AgentMessageBubble extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: isUser ? const Color(0xFFF8FFF8) : accent,
-          fontSize: compact ? 11 : 12,
-          fontWeight: FontWeight.w700,
+          color: isUser ? Colors.white : accent,
+          fontSize: compact ? 12 : 14,
+          fontWeight: FontWeight.bold,
           letterSpacing: 0.2,
         ),
       ),
@@ -149,11 +150,11 @@ class AgentMessageBubble extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isUser
-            ? accent.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.08),
+            ? accent.withOpacity(0.1)
+            : AppColors.background,
         border: Border.all(
-          color: isUser ? accent : Colors.white24,
-          width: 1.2,
+          color: isUser ? accent : AppColors.border,
+          width: 1.5,
         ),
       ),
       child: Icon(
@@ -169,8 +170,8 @@ class AgentMessageBubble extends StatelessWidget {
     required bool isUser,
     required double fontSize,
   }) {
-    final primaryText = isUser ? Colors.white : Colors.white.withValues(alpha: 0.94);
-    final mutedText = isUser ? Colors.white70 : Colors.white60;
+    final primaryText = isUser ? Colors.white : AppColors.textMain;
+    final mutedText = isUser ? Colors.white70 : AppColors.textSub;
 
     return MarkdownStyleSheet(
       p: TextStyle(
@@ -208,22 +209,22 @@ class AgentMessageBubble extends StatelessWidget {
         height: 1.6,
       ),
       blockquoteDecoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.08),
+        color: isUser ? Colors.black.withOpacity(0.08) : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border(
           left: BorderSide(
-            color: isUser ? Colors.white54 : accent.withValues(alpha: 0.7),
-            width: 3,
+            color: isUser ? Colors.white54 : accent.withValues(alpha: 0.6),
+            width: 4,
           ),
         ),
       ),
       code: TextStyle(
         color: primaryText,
-        backgroundColor: Colors.black.withValues(alpha: 0.18),
+        backgroundColor: isUser ? Colors.black.withOpacity(0.18) : AppColors.background,
         fontSize: fontSize - 1,
       ),
       codeblockDecoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.12),
+        color: isUser ? Colors.black.withOpacity(0.12) : AppColors.background,
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -264,8 +265,8 @@ class AgentLoadingBubble extends StatelessWidget {
             height: compact ? 36 : 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.08),
-              border: Border.all(color: Colors.white24, width: 1.2),
+              color: AppColors.background,
+              border: Border.all(color: AppColors.border, width: 1.5),
             ),
             child: Icon(assistantIcon, color: accent, size: compact ? 18 : 20),
           ),
@@ -276,11 +277,12 @@ class AgentLoadingBubble extends StatelessWidget {
               vertical: compact ? 12 : 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(compact ? 18 : 24).copyWith(
                 topLeft: Radius.circular(compact ? 6 : 8),
               ),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: AppColors.border),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -297,9 +299,9 @@ class AgentLoadingBubble extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: compact ? 13 : 14,
-                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSub,
+                    fontSize: compact ? 14 : 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -325,7 +327,7 @@ class _StreamingFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.12),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -342,10 +344,10 @@ class _StreamingFooter extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            style: const TextStyle(
+              color: AppColors.textSub,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

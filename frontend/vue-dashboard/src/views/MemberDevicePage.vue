@@ -255,7 +255,7 @@ onMounted(() => {
 <template>
   <section class="page-stack">
     <PageHeader
-      eyebrow="Member & Device"
+      eyebrow="成员与设备管理"
       title="成员设备"
       description="先登记真实 T10 手环，可选择立即绑定老人，也可以先空挂设备台账；采集器收到完整 A/B 双包后，设备会从 pending 自动切到在线监控。"
       :meta="pageMeta"
@@ -267,7 +267,7 @@ onMounted(() => {
       <article class="panel member-device-panel">
         <div class="panel-head">
           <div>
-            <p class="section-eyebrow">T10 Device Onboarding</p>
+            <p class="section-eyebrow">配置新设备</p>
             <h2>注册真实 T10 手环</h2>
             <p class="subtle-copy">
               运营人员只需要输入手环 MAC。你可以直接绑定老人，也可以先登记到设备台账，后续再补绑定关系。
@@ -387,7 +387,7 @@ onMounted(() => {
       <article class="panel member-device-panel" v-if="!hasElders">
         <div class="panel-head">
           <div>
-            <p class="section-eyebrow">Elder Registration</p>
+            <p class="section-eyebrow">新成员档案</p>
             <h2>先补一位老人账号</h2>
             <p class="subtle-copy">如果当前社区还没有老人资料，可以先在这里补一位老人，再回来绑定手环。</p>
           </div>
@@ -422,7 +422,7 @@ onMounted(() => {
       <article class="panel member-device-panel">
         <div class="panel-head">
           <div>
-            <p class="section-eyebrow">Device Ledger</p>
+            <p class="section-eyebrow">资产清单管理</p>
             <h2>设备清单</h2>
             <p class="subtle-copy">新注册的 T10 会先以 pending 展示；收到完整双包后自动变为 online。</p>
           </div>
@@ -491,7 +491,7 @@ onMounted(() => {
       <article class="panel member-device-panel">
         <div class="panel-head">
           <div>
-            <p class="section-eyebrow">Bind Timeline</p>
+            <p class="section-eyebrow">行为日志轴</p>
             <h2>绑定历史</h2>
             <p class="subtle-copy">
               {{
@@ -591,8 +591,8 @@ onMounted(() => {
   gap: 6px;
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(12, 20, 34, 0.88);
-  border: 1px solid rgba(56, 189, 248, 0.10);
+  background: #f8fafc;
+  border: 1px solid var(--line-medium);
 }
 
 .readout-card.wide {
@@ -613,10 +613,9 @@ onMounted(() => {
 .register-prompt {
   padding: 16px 18px;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 34%),
-    rgba(13, 24, 38, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: #ffffff;
+  border: 1px solid var(--line-medium);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
   color: var(--text-sub);
 }
 
