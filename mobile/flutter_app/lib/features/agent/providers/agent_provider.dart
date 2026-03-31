@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../voice/models/voice_model.dart';
 import '../repositories/agent_repository.dart';
+import '../../voice/repositories/voice_repository.dart';
+import '../../../core/services/audio_service.dart';
+import '../../voice/providers/voice_provider.dart';
+import '../../care/providers/care_provider.dart';
 
 enum AgentStatus { initial, loading, streaming, loaded, error }
 
@@ -116,9 +122,23 @@ class AgentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> ttsSpeak(String text) async {
-    // This is a placeholder for triggering TTS. 
-    // In a real app, we would call a TTS repository/service here.
-    debugPrint('TTS Speaking: $text');
+  Future<void> ttsSpeak(BuildContext context, String text) async {
+    if (text.trim().isEmpty) return;
+    
+    final voiceProvider = context.read<VoiceProvider>();
+    final careProvider = context.read<CareProvider>();
+    final deviceMac = careProvider.profile?.boundDeviceMacs.firstOrNull;
+
+    _status = AgentStatus.loading;
+    notifyListeners();
+
+    try {
+      await voiceProvider.processTts(text);
+      _status = AgentStatus.loaded;
+    } catch (e) {
+      _errorMessage = '播报失败';
+      _status = AgentStatus.error;
+    }
+    notifyListeners();
   }
 }

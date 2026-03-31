@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
@@ -90,9 +90,15 @@ class StreamService:
             for sample in values
         ]
 
-    def latest_samples(self) -> list[HealthSample]:
+    def latest_samples(self, filter_macs: list[str] | set[str] | None = None) -> list[HealthSample]:
         snapshots: list[HealthSample] = []
-        for stream in self._streams.values():
-            if stream:
-                snapshots.append(stream[-1])
+        if filter_macs is not None:
+            valid_set = {self._normalize_mac(mac) for mac in filter_macs}
+            for mac, stream in self._streams.items():
+                if stream and mac in valid_set:
+                    snapshots.append(stream[-1])
+        else:
+            for stream in self._streams.values():
+                if stream:
+                    snapshots.append(stream[-1])
         return snapshots

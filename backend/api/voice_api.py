@@ -7,14 +7,14 @@ from fastapi import APIRouter, Header, HTTPException, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from backend.config import get_settings
+from backend.dependencies import get_settings, get_device_service
 from backend.services.voice_service import VoiceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 _settings = get_settings()
-_voice_service = VoiceService(_settings)
+_voice_service = VoiceService(_settings, device_service=get_device_service())
 
 
 class TTSRequest(BaseModel):

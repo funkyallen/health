@@ -48,3 +48,4 @@ openai>=1.30,<2
 langchain_chroma
 dashscope
 psutil
+pyaudio

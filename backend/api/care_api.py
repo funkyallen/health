@@ -152,6 +152,12 @@ def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]
     for device in sorted(devices, key=lambda item: item.created_at):
         elder = user_service.get_user(device.user_id) if device.user_id else None
         demo_elder = demo_elder_by_device_mac.get(device.mac_address) or demo_elder_by_id.get(device.user_id or "")
+        
+        # 实时数据过滤：如果设备离线，最新样本属性强制置为 None 或展示"--"
+        latest_sample = None
+        if device.status != DeviceStatus.OFFLINE:
+            latest_sample = get_display_latest_sample(device.mac_address, device.ingest_mode)
+            
         metrics.append(
             CareAccessDeviceMetric(
                 device_mac=device.mac_address,
@@ -161,7 +167,7 @@ def _device_metrics(devices: list[DeviceRecord]) -> list[CareAccessDeviceMetric]
                 bind_status=device.bind_status,
                 elder_id=elder.id if elder else getattr(demo_elder, "id", None),
                 elder_name=elder.name if elder else getattr(demo_elder, "name", None),
-                latest_sample=get_display_latest_sample(device.mac_address, device.ingest_mode),
+                latest_sample=latest_sample,
             )
         )
     return metrics
@@ -712,13 +718,13 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                 latest_health_score=(
                     int(round(structured.health_score)) if structured and structured.health_score is not None else (sample.health_score if sample else None)
                 ),
-                heart_rate=sample.heart_rate if sample else None,
-                blood_oxygen=sample.blood_oxygen if sample else None,
-                blood_pressure=sample.blood_pressure if sample else None,
-                temperature=sample.temperature if sample else None,
-                steps=sample.steps if sample else None,
+                heart_rate=sample.heart_rate if sample and device.status != DeviceStatus.OFFLINE else None,
+                blood_oxygen=sample.blood_oxygen if sample and device.status != DeviceStatus.OFFLINE else None,
+                blood_pressure=sample.blood_pressure if sample and device.status != DeviceStatus.OFFLINE else None,
+                temperature=sample.temperature if sample and device.status != DeviceStatus.OFFLINE else None,
+                steps=sample.steps if sample and device.status != DeviceStatus.OFFLINE else None,
                 active_alarm_count=active_alarm_count,
-                structured_health=structured,
+                structured_health=structured if device.status != DeviceStatus.OFFLINE else None,
             )
         )
 
@@ -766,12 +772,12 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                 latest_health_score=(
                     int(round(structured.health_score)) if structured and structured.health_score is not None else (sample.health_score if sample else None)
                 ),
-                heart_rate=sample.heart_rate if sample else None,
-                blood_oxygen=sample.blood_oxygen if sample else None,
-                blood_pressure=sample.blood_pressure if sample else None,
-                temperature=sample.temperature if sample else None,
-                battery=sample.battery if sample else None,
-                steps=sample.steps if sample else None,
+                heart_rate=sample.heart_rate if sample and device.status != DeviceStatus.OFFLINE else None,
+                blood_oxygen=sample.blood_oxygen if sample and device.status != DeviceStatus.OFFLINE else None,
+                blood_pressure=sample.blood_pressure if sample and device.status != DeviceStatus.OFFLINE else None,
+                temperature=sample.temperature if sample and device.status != DeviceStatus.OFFLINE else None,
+                battery=sample.battery if sample and device.status != DeviceStatus.OFFLINE else None,
+                steps=sample.steps if sample and device.status != DeviceStatus.OFFLINE else None,
                 active_alarm_count=active_alarm_count,
                 sos_active=active_sos_alarm is not None,
                 active_sos_alarm_id=active_sos_alarm.id if active_sos_alarm else None,
@@ -780,7 +786,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                     if active_sos_alarm and active_sos_alarm.metadata.get("sos_trigger")
                     else None
                 ),
-                structured_health=structured,
+                structured_health=structured if device.status != DeviceStatus.OFFLINE else None,
             )
         )
 

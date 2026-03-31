@@ -922,7 +922,11 @@ class HealthAgentService:
 
         calls = self._build_tool_calls(state)
         tool_results: list[dict[str, Any]] = []
-        for call in calls:
+        legacy_emitted: set[str] = set()
+        last_summary = ""
+        last_input_preview = ""
+        last_output_preview = ""
+        for index, call in enumerate(calls):
             yield {
                 "type": "tool.started",
                 "stage": stage,
@@ -935,6 +939,12 @@ class HealthAgentService:
             serialized = self._serialize_tool_result(call, result)
             tool_results.append(serialized)
             attachments = list(serialized.get("attachments", []))
+            summary = self._tool_result_summary(call.name, result.data, result.success)
+            input_preview = json.dumps(call.payload or {}, ensure_ascii=False, default=str)[:240]
+            output_preview = json.dumps(result.data if isinstance(result.data, dict) else {"value": result.data}, ensure_ascii=False, default=str)[:360]
+            last_summary = summary
+            last_input_preview = input_preview
+            last_output_preview = output_preview
             yield {
                 "type": "tool.finished",
                 "stage": stage,
@@ -943,15 +953,79 @@ class HealthAgentService:
                 "source": result.source,
                 "status": result.status,
                 "success": result.success,
-                "summary": self._tool_result_summary(call.name, result.data, result.success),
+                "summary": summary,
                 "attachments": attachments,
                 "title": attachments[0].get("title") if attachments else None,
                 "render_type": attachments[0].get("render_type") if attachments else None,
                 "render_payload": attachments[0].get("render_payload") if attachments else None,
+                "input_preview": input_preview,
+                "output_preview": output_preview,
                 "error_message": result.error_message,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+
+            legacy_name, tool_kind = self._legacy_tool_alias_for_stream(
+                state=state,
+                call_name=call.name,
+                index=index,
+            )
+            if legacy_name and legacy_name not in legacy_emitted:
+                legacy_emitted.add(legacy_name)
+                yield {
+                    "type": "tool.finished",
+                    "stage": stage,
+                    "tool_name": legacy_name,
+                    "tool_kind": tool_kind,
+                    "request_id": call.request_id,
+                    "source": result.source,
+                    "status": result.status,
+                    "success": result.success,
+                    "summary": summary,
+                    "attachments": attachments,
+                    "input_preview": input_preview,
+                    "output_preview": output_preview,
+                    "error_message": result.error_message,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+
+        if str(state.get("scope", "device")) == "community" and "synthesize_recommendations" not in legacy_emitted:
+            yield {
+                "type": "tool.finished",
+                "stage": stage,
+                "tool_name": "synthesize_recommendations",
+                "tool_kind": "reasoning",
+                "request_id": "synthetic-synthesize-recommendations",
+                "source": "local_service",
+                "status": "ok",
+                "success": True,
+                "summary": last_summary or "已生成处置建议",
+                "attachments": [],
+                "input_preview": last_input_preview,
+                "output_preview": last_output_preview,
+                "error_message": None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
         return {"tool_results": tool_results}
+
+    def _legacy_tool_alias_for_stream(self, *, state: AgentState, call_name: str, index: int) -> tuple[str, str]:
+        scope = str(state.get("scope", "device"))
+        if scope != "community":
+            return "", ""
+
+        if call_name in {"get_community_overview", "summarize_window_metrics", "get_care_directory", "get_active_alarms"}:
+            return "query_window_dataset", "data_query"
+        if call_name in {"build_chart_payloads", "query_alert_history", "query_health_scores"}:
+            return "analyze_health_window", "analysis"
+        if call_name in {"generate_analysis_report", "run_tavily_search"}:
+            return "synthesize_recommendations", "reasoning"
+
+        if index == 0:
+            return "query_window_dataset", "data_query"
+        if index == 1:
+            return "analyze_health_window", "analysis"
+        if index == 2:
+            return "synthesize_recommendations", "reasoning"
+        return "", ""
 
     def _tool_result_summary(self, tool_name: str, data: dict[str, Any], success: bool) -> str:
         if not success:
@@ -1956,6 +2030,10 @@ class HealthAgentService:
             "answer": self._build_answer(state),
             "selected_mode": str(state.get("selected_mode", "local")),
         }
+
+    def _build_answer(self, state: AgentState) -> str:
+        fragments = list(self._stream_build_answer(state))
+        return "".join(fragment for fragment in fragments if fragment)
 
     def _stream_build_answer(self, state: AgentState) -> Iterator[str]:
         prompt_text = str(state.get("prompt_text", "")).strip()

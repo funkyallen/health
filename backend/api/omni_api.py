@@ -7,14 +7,14 @@ from typing import Literal
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from backend.config import get_settings
+from backend.dependencies import get_settings, get_device_service
 from backend.services.voice_service import VoiceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/omni", tags=["omni"])
 
 _settings = get_settings()
-_voice_service = VoiceService(_settings)
+_voice_service = VoiceService(_settings, device_service=get_device_service())
 
 @router.post("/analyze")
 async def omni_analyze_voice(
@@ -44,7 +44,7 @@ async def omni_analyze_voice(
     # Call VoiceService omni_chat
     # Note: In a full implementation, we might want to inject device context (samples) 
     # into the prompt before sending it to Omni.
-    result = _voice_service.omni_chat(audio_bytes, prompt=prompt, fmt=fmt)
+    result = _voice_service.omni_chat(audio_bytes, prompt=prompt, fmt=fmt, device_mac=device_mac)
     
     if not result.get("ok"):
         raise HTTPException(status_code=500, detail=result.get("error") or "Omni analysis failed")

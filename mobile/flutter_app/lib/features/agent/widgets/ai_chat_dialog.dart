@@ -316,7 +316,7 @@ class _AiChatDialogState extends State<AiChatDialog> {
                       streamingLabel: _experience.streamingLabel,
                       fontSize: widget.isElder ? 18 : 14,
                       compact: !widget.isElder,
-                      onSpeak: () => provider.ttsSpeak(message.content),
+                      onSpeak: () => provider.ttsSpeak(context, message.content),
                     );
                 },
               ),

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
@@ -23,6 +23,7 @@ from backend.models.analytics_model import (
     HistoryBucket,
     WindowKind,
 )
+from backend.models.device_model import DeviceStatus
 from backend.models.health_model import HealthSample, HealthTrendPoint, IngestResponse
 from backend.schemas.common import build_error_response, build_success_response
 from backend.schemas.health import HealthScoreApiResponse, HealthScoreRequest
@@ -41,6 +42,8 @@ async def ingest_health_sample(payload: HealthSample) -> IngestResponse:
 @router.get("/realtime/{device_mac}", response_model=HealthSample)
 async def get_realtime_sample(device_mac: str) -> HealthSample:
     device = get_device_service().get_device(device_mac)
+    if device and device.status == DeviceStatus.OFFLINE:
+        raise HTTPException(status_code=404, detail="Device is offline")
     sample = get_display_latest_sample(device_mac, device.ingest_mode if device else None)
     if not sample:
         raise HTTPException(status_code=404, detail="No realtime sample available")
@@ -54,6 +57,8 @@ async def get_health_trend(
     limit: int = Query(default=120, ge=10, le=1000),
 ) -> list[HealthTrendPoint]:
     device = get_device_service().get_device(device_mac)
+    if device and device.status == DeviceStatus.OFFLINE:
+        return []
     samples = get_display_trend_samples(
         device_mac,
         device.ingest_mode if device else None,
@@ -90,8 +95,14 @@ async def get_device_history(
 
 @router.get("/community/overview")
 async def get_community_overview() -> dict[str, object]:
-    samples = get_stream_service().latest_samples()
-    history_by_device = get_stream_service().recent_by_devices(minutes=60, per_device_limit=60)
+    devices = get_device_service().list_devices()
+    online_macs = [d.mac_address for d in devices if d.status != DeviceStatus.OFFLINE]
+    samples = get_stream_service().latest_samples(filter_macs=online_macs)
+    history_by_device = get_stream_service().recent_by_devices(
+        device_macs=online_macs,
+        minutes=60,
+        per_device_limit=60
+    )
     summary = get_community_clusterer().summarize(samples, history_by_device)
     score = 0.0
     if samples:
