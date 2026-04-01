@@ -7,7 +7,7 @@ from uuid import uuid4
 from backend.config import Settings
 from backend.models.auth_model import AuthAccountPreview, LoginResponse, SessionUser
 from backend.models.care_model import CareDirectory, CommunityProfile, ElderProfile, FamilyProfile
-from backend.models.device_model import DeviceRecord
+from backend.models.device_model import DeviceBindStatus, DeviceRecord
 from backend.models.user_model import UserRole
 from backend.services.device_service import DeviceService
 from backend.services.relation_service import RelationService
@@ -110,9 +110,59 @@ class CareService:
             family = next((item for item in directory.families if item.id == family_id), None)
         if not family:
             return CareDirectory(community=directory.community, elders=[], families=[])
-        elder_set = set(family.elder_ids)
+        elder_ids = list(family.elder_ids)
+        if not elder_ids:
+            elder_ids = self.resolve_family_elder_ids(family_id)
+            if elder_ids:
+                family = family.model_copy(update={"elder_ids": elder_ids})
+        elder_set = set(elder_ids)
         elders = [elder for elder in directory.elders if elder.id in elder_set]
         return CareDirectory(community=directory.community, elders=elders, families=[family])
+
+    def resolve_family_elder_ids(self, family_user_id: str) -> list[str]:
+        explicit_elder_ids = [
+            relation.elder_user_id
+            for relation in self._relation_service.list_relations_by_family(family_user_id)
+            if relation.status == "active"
+        ]
+        if explicit_elder_ids:
+            return explicit_elder_ids
+
+        family_profile = self._user_service.get_family_profile(family_user_id)
+        if family_profile is None:
+            return []
+
+        community_family_ids = [
+            user.id
+            for user in self._user_service.list_users(role=UserRole.FAMILY)
+            if (profile := self._user_service.get_family_profile(user.id))
+            and profile.community_id == family_profile.community_id
+        ]
+        if community_family_ids != [family_user_id]:
+            return []
+
+        community_elder_ids = [
+            user.id
+            for user in self._user_service.list_users(role=UserRole.ELDER)
+            if (profile := self._user_service.get_elder_profile(user.id))
+            and profile.community_id == family_profile.community_id
+        ]
+        if len(community_elder_ids) == 1:
+            return community_elder_ids
+
+        bound_elder_ids = sorted(
+            {
+                device.user_id
+                for device in self._device_service.list_devices()
+                if device.user_id
+                and device.user_id in community_elder_ids
+                and device.bind_status == DeviceBindStatus.BOUND
+            }
+        )
+        if len(bound_elder_ids) == 1:
+            return bound_elder_ids
+
+        return []
 
     def list_auth_accounts(self) -> list[AuthAccountPreview]:
         records = self._build_demo_accounts()

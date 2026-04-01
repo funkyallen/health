@@ -75,7 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(sample.deviceMac, style: const TextStyle(color: const Color(0xFF64748B))),
+                  Text(sample.deviceMac, style: const TextStyle(color: Color(0xFF64748B))),
                   const SizedBox(height: 18),
                   GridView.count(
                     shrinkWrap: true,
@@ -104,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Expanded(
                           child: Text(
                             sample.sosFlag ? 'SOS 已触发，请立即联系现场人员。' : '设备运行正常，正在持续接收实时数据。',
-                            style: const TextStyle(color: const Color(0xFF0F172A), fontSize: 16),
+                            style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16),
                           ),
                         ),
                       ],

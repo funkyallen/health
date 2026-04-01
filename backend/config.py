@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     serial_apply_mac_filter: bool = False
     serial_apply_packet_type: bool = False
     serial_enable_broadcast_sos_overlay: bool = True
-    serial_response_cycle_seconds: float = 2.0
+    serial_response_cycle_seconds: float = 1.0
     serial_broadcast_cycle_seconds: float = 0.5
 
     mqtt_enabled: bool = False
@@ -338,7 +338,21 @@ class Settings(BaseSettings):
 
     @property
     def qwen_omni_model_id(self) -> str:
-        return self.qwen_omni_model.strip() or "qwen-omni"
+        normalized = (self.qwen_omni_model or "").strip().lower()
+        if not normalized:
+            return "qwen2.5-omni-7b"
+
+        legacy_aliases = {
+            "qwen-omni",
+            "qwen-omni-realtime",
+            "qwen3.5-omni-plus",
+            "qwen3.5-omni-plus-realtime",
+            "qwen3.5-pmni-plus",
+            "qwen3.5-pmni-plus-realtime",
+        }
+        if normalized in legacy_aliases:
+            return "qwen2.5-omni-7b"
+        return normalized
 
     @property
     def qwen_tts_model_name(self) -> str:

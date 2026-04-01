@@ -423,7 +423,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildRelationshipSelector() {
     return DropdownButtonFormField<String>(
-      value: _relationship,
+      initialValue: _relationship,
       dropdownColor: AppColors.surface,
       style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
       decoration: InputDecoration(

@@ -588,13 +588,26 @@ class _AiChatDialogState extends State<AiChatDialog> {
                 : null,
             onLongPressEnd: isAvailable
                 ? (_) async {
-                    await voiceProvider.stopRecording();
+                    final path = await voiceProvider.stopRecording(processOmni: false);
                     if (!mounted) {
                       return;
                     }
-                    if (voiceProvider.lastAsrText.isNotEmpty) {
-                      await _sendMessage(voiceProvider.lastAsrText);
+                    if (path == null) {
+                      return;
                     }
+                    final selectedMacs = _orderedSelectedMacs();
+                    if (selectedMacs.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(_experience.missingDeviceHint)),
+                      );
+                      return;
+                    }
+                    await context.read<AgentProvider>().sendVoiceMessageFromPath(
+                          path,
+                          deviceMac: selectedMacs.first,
+                          role: _experience.apiRole,
+                        );
+                    _scrollToBottom();
                   }
                 : null,
             child: AnimatedContainer(

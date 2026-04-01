@@ -26,7 +26,7 @@ class VitalCard extends StatelessWidget {
         children: [
           Text(label, style: TextStyle(color: accent, fontSize: 14)),
           const SizedBox(height: 10),
-          Text(value, style: const TextStyle(color: const Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold)),
         ],
       ),
     );

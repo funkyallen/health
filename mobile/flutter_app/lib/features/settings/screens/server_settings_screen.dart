@@ -131,7 +131,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               _buildFieldLabel('协议'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _scheme,
+                initialValue: _scheme,
                 dropdownColor: AppColors.surface,
                 decoration: _inputDecoration(),
                 items: const [

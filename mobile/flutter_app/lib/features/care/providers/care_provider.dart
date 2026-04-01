@@ -30,7 +30,8 @@ class CareProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isMutating => _isMutating;
 
-  void updateDependencies(CareRepository repository, SessionManager sessionManager) {
+  void updateDependencies(
+      CareRepository repository, SessionManager sessionManager) {
     _repository = repository;
     _sessionManager = sessionManager;
   }
@@ -49,7 +50,11 @@ class CareProvider extends ChangeNotifier {
       _profile = await _repository.getAccessProfile();
       final sessionUser = _sessionManager.user;
       if (sessionUser?.role == 'family' && sessionUser?.familyId != null) {
-        _familyDirectory = await _repository.getFamilyDirectory(sessionUser!.familyId!);
+        final relatedElderIds = _profile?.relatedElderIds ?? const <String>[];
+        if (!silent || _shouldRefreshFamilyDirectory(relatedElderIds)) {
+          _familyDirectory =
+              await _repository.getFamilyDirectory(sessionUser!.familyId!);
+        }
       } else {
         _familyDirectory = null;
       }
@@ -111,7 +116,7 @@ class CareProvider extends ChangeNotifier {
     }
   }
 
-  void startAutoRefresh({Duration interval = const Duration(seconds: 3)}) {
+  void startAutoRefresh({Duration interval = const Duration(seconds: 1)}) {
     stopAutoRefresh();
     Future.microtask(() => fetchProfile(silent: _profile != null));
     _refreshTimer = Timer.periodic(interval, (_) {
@@ -145,6 +150,35 @@ class CareProvider extends ChangeNotifier {
       }
     }
     return fallback;
+  }
+
+  bool _shouldRefreshFamilyDirectory(List<String> relatedElderIds) {
+    if (_familyDirectory == null) {
+      return true;
+    }
+
+    final currentIds = _familyDirectory!.elders
+        .map((elder) => elder.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false)
+      ..sort();
+    final expectedIds = relatedElderIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false)
+      ..sort();
+
+    if (currentIds.length != expectedIds.length) {
+      return true;
+    }
+
+    for (var index = 0; index < currentIds.length; index++) {
+      if (currentIds[index] != expectedIds[index]) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   String _humanizeApiDetail(String detail) {

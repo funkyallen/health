@@ -12,7 +12,6 @@ from backend.dependencies import (
     get_device_service,
     get_display_latest_sample,
     get_effective_device_ingest_mode,
-    get_relation_service,
     get_score_repo,
     get_stream_service,
     get_user_service,
@@ -81,7 +80,6 @@ def _demo_accessible_devices_for_elders(elders: list[object], devices: list[Devi
 
 def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord]]:
     device_service = get_device_service()
-    relation_service = get_relation_service()
     care_service = get_care_service()
     devices = device_service.list_devices()
 
@@ -103,11 +101,7 @@ def _user_bound_devices(user: SessionUser) -> tuple[list[str], list[DeviceRecord
         return [demo_elder.id], demo_devices
 
     if user.role == UserRole.FAMILY:
-        elder_ids = [
-            relation.elder_user_id
-            for relation in relation_service.list_relations_by_family(user.id)
-            if relation.status == "active"
-        ]
+        elder_ids = care_service.resolve_family_elder_ids(user.id)
         bound_devices = [
             device
             for device in devices
@@ -718,13 +712,13 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                 latest_health_score=(
                     int(round(structured.health_score)) if structured and structured.health_score is not None else (sample.health_score if sample else None)
                 ),
-                heart_rate=sample.heart_rate if sample and device.status != DeviceStatus.OFFLINE else None,
-                blood_oxygen=sample.blood_oxygen if sample and device.status != DeviceStatus.OFFLINE else None,
-                blood_pressure=sample.blood_pressure if sample and device.status != DeviceStatus.OFFLINE else None,
-                temperature=sample.temperature if sample and device.status != DeviceStatus.OFFLINE else None,
-                steps=sample.steps if sample and device.status != DeviceStatus.OFFLINE else None,
+                heart_rate=sample.heart_rate if sample and device and device.status != DeviceStatus.OFFLINE else None,
+                blood_oxygen=sample.blood_oxygen if sample and device and device.status != DeviceStatus.OFFLINE else None,
+                blood_pressure=sample.blood_pressure if sample and device and device.status != DeviceStatus.OFFLINE else None,
+                temperature=sample.temperature if sample and device and device.status != DeviceStatus.OFFLINE else None,
+                steps=sample.steps if sample and device and device.status != DeviceStatus.OFFLINE else None,
                 active_alarm_count=active_alarm_count,
-                structured_health=structured if device.status != DeviceStatus.OFFLINE else None,
+                structured_health=structured if device and device.status != DeviceStatus.OFFLINE else None,
             )
         )
 

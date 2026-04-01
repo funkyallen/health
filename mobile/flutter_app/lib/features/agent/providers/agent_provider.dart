@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../voice/models/voice_model.dart';
-import '../repositories/agent_repository.dart';
-import '../../voice/repositories/voice_repository.dart';
 import '../../../core/services/audio_service.dart';
 import '../../voice/providers/voice_provider.dart';
-import '../../care/providers/care_provider.dart';
+import '../repositories/agent_repository.dart';
 
 enum AgentStatus { initial, loading, streaming, loaded, error }
 
 class AgentProvider extends ChangeNotifier {
-  final AgentRepository _repository;
+  AgentRepository _repository;
+  AudioService _audioService;
 
   AgentStatus _status = AgentStatus.initial;
   String? _errorMessage;
   final List<AgentMessage> _messages = <AgentMessage>[];
 
-  AgentProvider(this._repository);
+  AgentProvider(this._repository, this._audioService);
 
   AgentStatus get status => _status;
   String? get errorMessage => _errorMessage;
   List<AgentMessage> get messages => _messages;
+
+  void updateDependencies(AgentRepository repository, AudioService audioService) {
+    _repository = repository;
+    _audioService = audioService;
+  }
 
   void init([String? initialGreeting]) {
     _messages.clear();
@@ -83,11 +86,28 @@ class AgentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> sendVoiceMessageFromPath(
+    String audioPath, {
+    String? deviceMac,
+    required String role,
+  }) async {
+    final audioBytes = await _audioService.readBytes(audioPath);
+    await sendVoiceMessage(
+      audioBytes,
+      deviceMac: deviceMac,
+      role: role,
+    );
+  }
+
   Future<void> sendVoiceMessage(
     List<int> audioBytes, {
     String? deviceMac,
     required String role,
   }) async {
+    if (audioBytes.isEmpty) {
+      return;
+    }
+
     final userMessage = AgentMessage(role: 'user', content: '[语音消息]');
     _messages.add(userMessage);
 
@@ -100,34 +120,48 @@ class AgentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _status = AgentStatus.streaming;
-      notifyListeners();
-
-      await for (final delta in _repository.streamOmniAnalysis(
+      final omniResponse = await _repository.analyzeOmniMessage(
         audioBytes,
         deviceMac,
         role: role,
-      )) {
+      );
+
+      _status = AgentStatus.streaming;
+      notifyListeners();
+
+      await for (final delta in _repository.syntheticChunks(omniResponse.text)) {
         assistantMessage.content += delta;
         notifyListeners();
       }
 
+      if (omniResponse.audioBase64.trim().isNotEmpty) {
+        await _audioService.playBase64(
+          omniResponse.audioBase64,
+          omniResponse.audioFormat,
+        );
+      } else if (omniResponse.audioUrl.trim().isNotEmpty) {
+        await _audioService.play(omniResponse.audioUrl);
+      }
+
       _status = AgentStatus.loaded;
-    } catch (_) {
-      _errorMessage = '语音分析失败，请稍后再试。';
+    } catch (error) {
+      final message = error.toString().replaceFirst('Exception: ', '').trim();
+      _errorMessage = message.isEmpty ? '语音分析失败，请稍后再试。' : message;
       _status = AgentStatus.error;
-      assistantMessage.content = '语音解析失败。';
+      if (assistantMessage.content.isEmpty) {
+        assistantMessage.content = _errorMessage!;
+      }
     }
 
     notifyListeners();
   }
 
   Future<void> ttsSpeak(BuildContext context, String text) async {
-    if (text.trim().isEmpty) return;
-    
+    if (text.trim().isEmpty) {
+      return;
+    }
+
     final voiceProvider = context.read<VoiceProvider>();
-    final careProvider = context.read<CareProvider>();
-    final deviceMac = careProvider.profile?.boundDeviceMacs.firstOrNull;
 
     _status = AgentStatus.loading;
     notifyListeners();
@@ -135,8 +169,8 @@ class AgentProvider extends ChangeNotifier {
     try {
       await voiceProvider.processTts(text);
       _status = AgentStatus.loaded;
-    } catch (e) {
-      _errorMessage = '播报失败';
+    } catch (_) {
+      _errorMessage = '播报失败。';
       _status = AgentStatus.error;
     }
     notifyListeners();

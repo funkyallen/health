@@ -448,10 +448,23 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
           GestureDetector(
             onLongPressStart: (_) => voiceProvider.startRecording(),
             onLongPressEnd: (_) async {
-              await voiceProvider.stopRecording();
-              if (voiceProvider.lastAsrText.isNotEmpty) {
-                await _sendMessage(voiceProvider.lastAsrText);
+              final path = await voiceProvider.stopRecording(processOmni: false);
+              if (!mounted || path == null) {
+                return;
               }
+              final deviceMac = _resolveDeviceMac();
+              if (deviceMac == null || deviceMac.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(_experience.missingDeviceHint)),
+                );
+                return;
+              }
+              await context.read<AgentProvider>().sendVoiceMessageFromPath(
+                    path,
+                    deviceMac: deviceMac,
+                    role: _experience.apiRole,
+                  );
+              _scrollToBottom();
             },
             child: Stack(
               alignment: Alignment.center,

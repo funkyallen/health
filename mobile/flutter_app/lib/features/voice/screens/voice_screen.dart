@@ -196,7 +196,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
         const SizedBox(height: 16),
         TextField(
           controller: _ttsController,
-          style: const TextStyle(color: const Color(0xFF0F172A)),
+          style: const TextStyle(color: Color(0xFF0F172A)),
           decoration: InputDecoration(
             hintText: '输入要播报的内容...',
             hintStyle: const TextStyle(color: AppColors.textMuted),

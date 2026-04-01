@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   elevation: 0,
                 ),
                 child: authProvider.status == AuthStatus.authenticating
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 3, color: const Color(0xFF0F172A)))
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Color(0xFF0F172A)))
                     : const Text('登 录', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 4)),
               ),
               const SizedBox(height: 16),

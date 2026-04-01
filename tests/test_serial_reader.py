@@ -134,3 +134,70 @@ def test_single_target_reader_rotates_response_and_broadcast_types(monkeypatch) 
 
     assert "AT+TYPE=5" in connection.writes
     assert "AT+TYPE=4" in connection.writes
+
+
+def test_detect_port_falls_back_from_stale_preferred_port(monkeypatch) -> None:
+    reader = SerialGatewayReader(_ParserStub())
+
+    monkeypatch.setattr(
+        serial_reader_module.list_ports,
+        "comports",
+        lambda: [
+            SimpleNamespace(
+                device="COM9",
+                description="CP210x USB to UART Bridge",
+                manufacturer="Silicon Labs",
+                hwid="USB VID:PID=10C4:EA60",
+            )
+        ],
+    )
+
+    detected_port = reader.detect_port("COM7", ["cp210"])
+
+    assert detected_port == "COM9"
+
+
+def test_reader_reconnects_and_redetects_new_com_port(monkeypatch) -> None:
+    sample = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=72,
+        temperature=36.5,
+        blood_oxygen=98,
+        blood_pressure="120/80",
+        battery=90,
+        source=IngestionSource.SERIAL,
+    )
+    parser = _ParserStub(sample=sample)
+    reader = SerialGatewayReader(parser)
+    published: list[HealthSample] = []
+    detected_ports = iter(["COM3", "COM4"])
+    opened_ports: list[str] = []
+
+    def fake_serial(**kwargs):
+        port = kwargs["port"]
+        opened_ports.append(port)
+        if port == "COM3":
+            return _FakeConnection([OSError("port disconnected")])
+        return _FakeConnection([b"payload\r\n", KeyboardInterrupt()])
+
+    monkeypatch.setattr(reader, "detect_port", lambda port, keywords: next(detected_ports))
+    monkeypatch.setattr(reader, "_extract_payload_and_mac", lambda line: ("161803AABBCC", "54:10:26:01:00:DF"))
+    monkeypatch.setattr(serial_reader_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(
+        serial_reader_module,
+        "serial",
+        SimpleNamespace(Serial=fake_serial),
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        reader.run(
+            collection_strategy="single_target",
+            mac_filter="54:10:26:01:00:DF",
+            target_mac_provider=lambda: "54:10:26:01:00:DF",
+            on_sample=published.append,
+        )
+
+    assert opened_ports == ["COM3", "COM4"]
+    assert parser.calls == [("54:10:26:01:00:DF", "161803AABBCC", IngestionSource.SERIAL)]
+    assert published == [sample]

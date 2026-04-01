@@ -72,7 +72,10 @@ _data_generator = SyntheticHealthDataGenerator(
     device_count=_settings.mock_device_count,
     mac_prefix=(_settings.allowed_mac_prefixes[0] if _settings.allowed_mac_prefixes else _settings.mock_device_mac_prefix),
 )
-_parser = T10PacketParser(sos_window_seconds=_settings.sos_broadcast_window_seconds, merge_timeout_seconds=max(2.0, _settings.serial_packet_merge_timeout_seconds))
+_parser = T10PacketParser(
+    sos_window_seconds=_settings.sos_broadcast_window_seconds,
+    merge_timeout_seconds=max(0.3, _settings.serial_packet_merge_timeout_seconds),
+)
 _analysis_service = HealthDataAnalysisService()
 _rag_service = LangChainRAGService(_settings, _settings.data_dir.parent / "docs" / "knowledge-base")
 _care_service = CareService(_device_service, _user_service, _relation_service, _settings)
@@ -152,11 +155,6 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         )
 
     # 正常的持久化和流分发逻辑...
-    # 如果设备不存在且我们不处于 mock 模式，也要小心旁路攻击
-    if not device:
-        # 记录未知设备的采样，但不分发到实时流，除非它是被允许的前缀
-        pass
-
     _health_data_repository.persist_sample(sample)
     _stream_service.publish(sample)
 
@@ -176,16 +174,17 @@ _mock_devices_to_seed = _data_generator.build_devices()
 for _mock_index, _mock_dev in enumerate(_mock_devices_to_seed):
     if _device_service.get_device(_mock_dev.mac_address) is None:
         _device_service.seed_devices([_mock_dev])
-    seeded_status = DeviceStatus.OFFLINE if _mock_index % 5 == 0 else DeviceStatus.ONLINE
+    # 李建国 (elder01_02) 的设备永远在线
+    if _mock_dev.mac_address == "53:57:08:00:00:01":
+        seeded_status = DeviceStatus.ONLINE
+    else:
+        seeded_status = DeviceStatus.OFFLINE if _mock_index % 5 == 0 else DeviceStatus.ONLINE
     _device_service.update_status(_mock_dev.mac_address, seeded_status)
 _intelligent_scorer.warmup(_data_generator.build_training_sequences(hours=24, step_minutes=10))
 
 if _settings.data_mode == "mock" and _settings.use_mock_data:
     # 纯 mock 模式：预填充历史数据到 stream，让 UI 启动即有数据
-    for mac, device_history in _data_generator.build_history(hours=1, step_minutes=10).items():
-        device = _device_service.get_device(mac)
-        if device and device.status == DeviceStatus.OFFLINE:
-            continue
+    for device_history in _data_generator.build_history(hours=1, step_minutes=10).values():
         for sample in device_history:
             baseline = _baseline_tracker.observe(sample)
             sample.health_score = _health_score_service.score(sample, baseline)
@@ -254,11 +253,8 @@ def _sample_source_allowed(device: DeviceRecord, sample: HealthSample) -> bool:
 
 def _persist_demo_overlay_sample(sample: HealthSample, *, explanation: str, source_label: str) -> None:
     device = _device_service.get_device(sample.device_mac)
-    if isinstance(device, DeviceRecord):
-        if not _sample_source_allowed(device, sample):
-            return
-        if device.status == DeviceStatus.OFFLINE:
-            return
+    if isinstance(device, DeviceRecord) and not _sample_source_allowed(device, sample):
+        return
     _health_data_repository.persist_sample(sample)
     _stream_service.publish(sample)
 

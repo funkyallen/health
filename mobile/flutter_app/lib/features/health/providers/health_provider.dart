@@ -82,7 +82,8 @@ class HealthProvider extends ChangeNotifier {
   }
 
   void _seedHistory(List<HealthData> trend, {HealthData? snapshot}) {
-    final ordered = [...trend]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final ordered = [...trend]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     final merged = <HealthData>[];
 
     for (final sample in ordered) {
@@ -189,8 +190,9 @@ class HealthProvider extends ChangeNotifier {
 
   void _startPollingFallback() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      unawaited(_pollSnapshot(includeTrend: _historyBuffer.length < 2 || !_isWsConnected));
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      unawaited(_pollSnapshot(
+          includeTrend: _historyBuffer.length < 2 || !_isWsConnected));
     });
   }
 

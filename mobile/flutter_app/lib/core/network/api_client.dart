@@ -47,9 +47,9 @@ class ApiClient {
     return _dio.get(path, queryParameters: queryParameters);
   }
 
-  Future<Response> post(String path, {dynamic data}) {
+  Future<Response> post(String path, {dynamic data, Options? options}) {
     _syncBaseUrl();
-    return _dio.post(path, data: data);
+    return _dio.post(path, data: data, options: options);
   }
 
   Future<Response> postStream(String path, {dynamic data}) {

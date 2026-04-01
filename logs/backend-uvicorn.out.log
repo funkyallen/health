@@ -1,0 +1,244 @@
+RAG Incremental Load: 26 clean chunks, 0 new chunks. Dirty: 0, Deleted: 0
+2026-04-01 19:17:54,005 | INFO | backend.ml.inference | Health inference will use CPU device
+2026-04-01 19:17:56,690 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:17:56,694 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+2026-04-01 19:17:57,697 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:17:57,701 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:17:58,705 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:17:58,708 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:17:59,720 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:17:59,723 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:00,727 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:00,732 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:01,735 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:01,740 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:02,743 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:02,747 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:03,750 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:03,754 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:04,759 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:04,762 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:05,767 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:05,772 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     127.0.0.1:51008 - "GET /api/v1/omni/status HTTP/1.1" 200 OK
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:06,776 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:06,779 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:07,782 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:07,786 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:08,789 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:08,792 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:09,794 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:09,798 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:10,801 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:10,804 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:11,808 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:11,811 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:12,814 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:12,818 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:13,821 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:13,823 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:14,827 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:14,830 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:15,833 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:15,836 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:16,840 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:16,844 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:17,847 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:17,849 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:18,853 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:18,856 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:19,860 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:19,864 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:20,868 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:20,873 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:21,876 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:21,879 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:22,883 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:22,886 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:23,892 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:23,895 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:24,899 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:24,902 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:25,906 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:25,910 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:26,913 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:26,916 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:27,921 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:27,927 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:28,931 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:28,936 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:29,940 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:29,946 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:30,951 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:30,954 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:31,958 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:31,964 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:32,970 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:32,974 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:33,979 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:33,984 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:34,989 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:34,993 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:35,996 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:36,002 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:37,007 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:37,018 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+2026-04-01 19:18:38,014 | INFO | httpx | HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-01 19:18:38,026 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:38,029 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+2026-04-01 19:18:39,034 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:39,037 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+2026-04-01 19:18:40,041 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:40,045 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:49284 - "POST /api/v1/omni/analyze HTTP/1.1" 200 OK
+INFO:     172.20.10.6:50766 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:41,049 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:41,051 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:42,057 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:42,061 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:43,065 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:43,069 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:44,072 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:44,076 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:45,081 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:45,083 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:46,089 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:46,094 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:47,099 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:47,102 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:48,107 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:48,113 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:49,116 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:49,123 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:50,128 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:50,132 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:51,136 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:51,139 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:52,143 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:52,150 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:53,153 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:53,156 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:54,166 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:54,171 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:55,176 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:55,179 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:56,183 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:56,189 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:57,195 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:57,199 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:58,203 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:58,206 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:18:59,211 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:18:59,214 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:00,220 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:00,223 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:01,227 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:01,229 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:02,234 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:02,237 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:03,240 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:03,243 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:04,248 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:04,253 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:05,256 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:05,260 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:06,263 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:06,268 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:07,272 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:07,276 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:08,280 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:08,285 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:09,288 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:09,293 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:10,299 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:10,302 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:11,305 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:11,308 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:12,313 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:12,316 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:13,320 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:13,323 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:14,329 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:14,334 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:15,338 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:15,341 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:16,347 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:16,351 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.
+INFO:     172.20.10.6:50708 - "GET /api/v1/care/access-profile/me HTTP/1.1" 401 Unauthorized
+2026-04-01 19:19:17,356 | WARNING | iot.serial_reader | Preferred serial collector port COM3 is unavailable; falling back to auto-detection.
+2026-04-01 19:19:17,360 | WARNING | iot.serial_reader | Serial collector unavailable on COM3, retrying detection in 1.0s: No compatible collector serial port was detected.

@@ -37,7 +37,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('告警中心', style: TextStyle(color: const Color(0xFF0F172A), fontSize: 18)),
+        title: const Text('告警中心', style: TextStyle(color: Color(0xFF0F172A), fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: const [LogoutAction()],
@@ -125,7 +125,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
                 Expanded(
                   child: Text(
                     alarm.alarmType.toUpperCase(),
-                    style: const TextStyle(color: const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold),
                   ),
                 ),
                 Text(
@@ -137,7 +137,7 @@ class _AlarmCenterScreenState extends State<AlarmCenterScreen> with SingleTicker
             const SizedBox(height: 12),
             Text(
               alarm.message,
-              style: const TextStyle(color: const Color(0xFF64748B), fontSize: 14),
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(

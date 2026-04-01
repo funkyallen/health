@@ -13,6 +13,7 @@ import 'features/alarm/providers/alarm_provider.dart';
 import 'features/alarm/widgets/global_alarm_listener.dart';
 import 'features/voice/repositories/voice_repository.dart';
 import 'features/voice/providers/voice_provider.dart';
+import 'features/voice/providers/omni_7b_voice_provider.dart';
 import 'features/care/providers/care_provider.dart';
 import 'features/care/repositories/care_repository.dart';
 import 'features/care/screens/elder_home_screen.dart';
@@ -118,11 +119,33 @@ class AppBootstrap extends StatelessWidget {
             context.read<VoiceRepository>(),
             context.read<AudioService>(),
           ),
-          update: (context, repo, audio, prev) => prev ?? VoiceProvider(repo, audio),
+          update: (context, repo, audio, prev) {
+            final provider = prev ?? VoiceProvider(repo, audio);
+            provider.updateDependencies(repo, audio);
+            return provider;
+          },
         ),
-        ChangeNotifierProxyProvider<AgentRepository, AgentProvider>(
-          create: (context) => AgentProvider(context.read<AgentRepository>()),
-          update: (context, repo, prev) => prev ?? AgentProvider(repo),
+        ChangeNotifierProxyProvider2<AgentRepository, AudioService, AgentProvider>(
+          create: (context) => AgentProvider(
+            context.read<AgentRepository>(),
+            context.read<AudioService>(),
+          ),
+          update: (context, repo, audio, prev) {
+            final provider = prev ?? AgentProvider(repo, audio);
+            provider.updateDependencies(repo, audio);
+            return provider;
+          },
+        ),
+        ChangeNotifierProvider<Omni7bVoiceProvider>(
+          create: (context) {
+            const apiKey = 'sk-67d1be1cac0649b9a8839d2328bbb845';
+            const apiBase = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+            return Omni7bVoiceProvider(
+              apiKey: apiKey,
+              apiBase: apiBase,
+              audioService: context.read<AudioService>(),
+            );
+          },
         ),
       ],
       child: const AiHealthApp(),

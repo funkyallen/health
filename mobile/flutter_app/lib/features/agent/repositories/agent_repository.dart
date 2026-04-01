@@ -14,8 +14,48 @@ class AgentMessage {
 
   factory AgentMessage.fromJson(Map<String, dynamic> json) {
     return AgentMessage(
-      role: json['role'] ?? 'assistant',
-      content: json['content'] ?? '',
+      role: json['role'] as String? ?? 'assistant',
+      content: json['content'] as String? ?? '',
+    );
+  }
+}
+
+class AgentOmniResponse {
+  final bool ok;
+  final String text;
+  final String audioBase64;
+  final String audioFormat;
+  final String audioUrl;
+  final String? provider;
+  final String? model;
+  final String? voice;
+  final String? error;
+
+  const AgentOmniResponse({
+    required this.ok,
+    required this.text,
+    required this.audioBase64,
+    required this.audioFormat,
+    required this.audioUrl,
+    this.provider,
+    this.model,
+    this.voice,
+    this.error,
+  });
+
+  bool get hasAudio => audioBase64.trim().isNotEmpty || audioUrl.trim().isNotEmpty;
+
+  factory AgentOmniResponse.fromJson(Map<String, dynamic> json) {
+    return AgentOmniResponse(
+      ok: json['ok'] as bool? ?? true,
+      text: json['text'] as String? ?? json['answer'] as String? ?? '',
+      audioBase64: json['audio_b64'] as String? ?? '',
+      audioFormat: json['fmt'] as String? ?? 'wav',
+      audioUrl: json['audio_url'] as String? ?? '',
+      provider: json['provider'] as String?,
+      model: json['model'] as String?,
+      voice: json['voice'] as String?,
+      error: json['error'] as String?,
     );
   }
 }
@@ -23,6 +63,8 @@ class AgentMessage {
 class AgentRepository {
   static const Duration _syntheticChunkDelay = Duration(milliseconds: 44);
   static const Duration _visualChunkDelay = Duration(milliseconds: 26);
+  static const Duration _omniUploadTimeout = Duration(seconds: 20);
+  static const Duration _omniReceiveTimeout = Duration(seconds: 120);
 
   final ApiClient _apiClient;
 
@@ -41,10 +83,10 @@ class AgentRepository {
     );
 
     if (normalizedDeviceMacs.isEmpty) {
-      yield* _yieldSyntheticChunks(
+      yield* syntheticChunks(
         normalizedRole == 'family'
-            ? '当前还没有可分析的手环设备，请先确认老人账号已经绑定手环并且设备在线。'
-            : '当前还没有绑定可分析的手环设备，请先回到主页确认手环已经连接。',
+            ? '当前还没有可分析的设备，请先确认家人账号已经绑定手环并且设备在线。'
+            : '当前还没有可分析的设备，请先回到主页确认手环已经连接。',
       );
       return;
     }
@@ -75,14 +117,10 @@ class AgentRepository {
           };
 
     try {
-      final response = await _apiClient.postStream(
-        endpoint,
-        data: payload,
-      );
-
+      final response = await _apiClient.postStream(endpoint, data: payload);
       final data = response.data;
       if (data == null) {
-        yield* _yieldSyntheticChunks('暂时没有拿到助手返回的数据。');
+        yield* syntheticChunks('暂时没有拿到助手返回的数据。');
         return;
       }
 
@@ -115,7 +153,7 @@ class AgentRepository {
           }
 
           if (!hasYieldedDelta && _containsRenderableText(parsed.text)) {
-            yield* _yieldSyntheticChunks(parsed.text);
+            yield* syntheticChunks(parsed.text);
             hasYieldedDelta = true;
           }
         }
@@ -130,49 +168,59 @@ class AgentRepository {
         return;
       }
       if (!hasYieldedDelta && _containsRenderableText(tail.text)) {
-        yield* _yieldSyntheticChunks(tail.text);
+        yield* syntheticChunks(tail.text);
       }
     } catch (error) {
-      yield* _yieldSyntheticChunks('请求分析失败：$error');
+      yield* syntheticChunks('请求分析失败：$error');
     }
   }
 
-  Stream<String> streamOmniAnalysis(
+  Future<AgentOmniResponse> analyzeOmniMessage(
     List<int> audioBytes,
     String? deviceMac, {
     required String role,
     String? prompt,
-  }) async* {
-    final endpoint = 'omni/analyze';
-    
+  }) async {
     try {
       final formData = FormData.fromMap(<String, dynamic>{
         'file': MultipartFile.fromBytes(
           audioBytes,
           filename: 'input.wav',
         ),
-        'prompt': prompt ?? '请结合我的生命体征数据回答。',
         'role': role.trim().toLowerCase(),
-        'device_mac': deviceMac?.trim(),
+        if (deviceMac != null && deviceMac.trim().isNotEmpty)
+          'device_mac': deviceMac.trim(),
+        if (prompt != null && prompt.trim().isNotEmpty) 'prompt': prompt.trim(),
       });
 
-      // Omni current API in this implementation is not streaming at the model level for simplicity,
-      // but we wrap the response in a stream for UI consistency.
       final response = await _apiClient.post(
-        endpoint,
+        'omni/analyze',
         data: formData,
+        options: Options(
+          sendTimeout: _omniUploadTimeout,
+          receiveTimeout: _omniReceiveTimeout,
+        ),
       );
-
-      if (response.data == null || response.data['ok'] != true) {
-        yield* _yieldSyntheticChunks('助手暂时无法解析您的语音。');
-        return;
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      final parsed = AgentOmniResponse.fromJson(payload);
+      if (!parsed.ok) {
+        throw Exception(parsed.error ?? '语音分析失败');
       }
-
-      final text = response.data['text'] as String? ?? '';
-      yield* _yieldSyntheticChunks(text);
-    } catch (error) {
-      yield* _yieldSyntheticChunks('语音请求失败：$error');
+      return parsed;
+    } on DioException catch (error) {
+      if (error.type == DioExceptionType.receiveTimeout) {
+        throw Exception('语音请求处理时间较长，请稍候再试。');
+      }
+      final responseData = error.response?.data;
+      if (responseData is Map && responseData['detail'] != null) {
+        throw Exception(responseData['detail'].toString());
+      }
+      throw Exception(error.message ?? '语音分析失败');
     }
+  }
+
+  Stream<String> syntheticChunks(String text) async* {
+    yield* _yieldSyntheticChunks(text);
   }
 
   Stream<String> _resolveTextStream(dynamic data) async* {

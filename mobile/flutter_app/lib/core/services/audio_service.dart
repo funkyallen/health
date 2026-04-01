@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 class AudioService {
   final AudioRecorder _recorder = AudioRecorder();
@@ -24,55 +26,97 @@ class AudioService {
       }
 
       final tempDir = await getTemporaryDirectory();
-      final path = '${tempDir.path}/speech_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      
+      final path = '${tempDir.path}/speech_${DateTime.now().millisecondsSinceEpoch}.wav';
+
       const config = RecordConfig(
-        encoder: AudioEncoder.aacLc, 
-        sampleRate: 16000, 
-        bitRate: 128000,
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        numChannels: 1,
       );
 
       await _recorder.start(config, path: path);
       return path;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
   Future<String?> stopRecording() async {
     try {
-      final path = await _recorder.stop();
-      return path;
-    } catch (e) {
+      return await _recorder.stop();
+    } catch (_) {
       return null;
     }
   }
 
+  Future<List<int>> readBytes(String path) async {
+    return File(path).readAsBytes();
+  }
+
   Future<void> play(String source) async {
     try {
-      if (source.startsWith('http') || source.startsWith('https')) {
+      if (source.startsWith('http://') || source.startsWith('https://')) {
         await _player.play(UrlSource(source));
-      } else if (source.startsWith('data:audio')) {
-        // Handle base64 data URI if needed, but usually we get URLs or b64 strings
-        // For simplicity, let's assume synthesized audio is played from URL or we save it to file
-      } else {
-        await _player.play(DeviceFileSource(source));
+        return;
       }
-    } catch (e) {
-      // Log error
+
+      if (source.startsWith('data:audio')) {
+        final data = Uri.parse(source).data;
+        final bytes = data?.contentAsBytes();
+        if (bytes == null || bytes.isEmpty) {
+          return;
+        }
+        final format = _inferFormatFromDataUri(source);
+        await _playBytes(bytes, format);
+        return;
+      }
+
+      await _player.play(DeviceFileSource(source));
+    } catch (_) {
+      // Intentionally swallow playback errors in the mobile client.
     }
   }
 
   Future<void> playBase64(String base64Content, String format) async {
     try {
-      final bytes = Uri.parse('data:audio/$format;base64,$base64Content').data!.contentAsBytes();
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/temp_tts.$format');
-      await file.writeAsBytes(bytes);
-      await _player.play(DeviceFileSource(file.path));
-    } catch (e) {
-      // Log error
+      if (base64Content.trim().isEmpty) {
+        return;
+      }
+      final bytes = base64Decode(base64Content);
+      await _playBytes(bytes, format);
+    } catch (_) {
+      // Intentionally swallow playback errors in the mobile client.
     }
+  }
+
+  Future<void> playBytes(List<int> bytes, String format) async {
+    await _playBytes(bytes, format);
+  }
+
+  Future<void> _playBytes(List<int> bytes, String format) async {
+    final tempDir = await getTemporaryDirectory();
+    final normalizedFormat = _normalizeFormat(format);
+    final file = File(
+      '${tempDir.path}/tts_${DateTime.now().millisecondsSinceEpoch}.$normalizedFormat',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    await _player.play(DeviceFileSource(file.path));
+  }
+
+  String _inferFormatFromDataUri(String value) {
+    final match = RegExp(r'^data:audio/([^;]+);base64,').firstMatch(value);
+    return _normalizeFormat(match?.group(1) ?? 'wav');
+  }
+
+  String _normalizeFormat(String value) {
+    final lower = value.trim().toLowerCase();
+    if (lower.isEmpty) {
+      return 'wav';
+    }
+    if (lower == 'mpeg') {
+      return 'mp3';
+    }
+    return lower;
   }
 
   Future<void> stopPlayback() async {

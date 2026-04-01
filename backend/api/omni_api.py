@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import base64
 import logging
-from typing import Literal
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
 
-from backend.dependencies import get_settings, get_device_service
+from backend.dependencies import get_device_service, get_settings
 from backend.services.voice_service import VoiceService
 
 logger = logging.getLogger(__name__)
@@ -16,45 +13,73 @@ router = APIRouter(prefix="/omni", tags=["omni"])
 _settings = get_settings()
 _voice_service = VoiceService(_settings, device_service=get_device_service())
 
+
+def _resolve_audio_format(filename: str, content_type: str) -> str:
+    lower_name = filename.lower()
+    lower_type = content_type.lower()
+    if lower_name.endswith(".mp3") or "mpeg" in lower_type:
+        return "mp3"
+    if lower_name.endswith((".m4a", ".aac", ".mp4")) or lower_type in {"audio/mp4", "audio/aac"}:
+        return "aac"
+    if lower_name.endswith(".amr") or "amr" in lower_type:
+        return "amr"
+    if lower_name.endswith((".3gp", ".3gpp")) or "3gp" in lower_type or "3gpp" in lower_type:
+        return "3gp"
+    return "wav"
+
+
 @router.post("/analyze")
 async def omni_analyze_voice(
     file: UploadFile = File(...),
-    prompt: str = Form("请结合老人的身体状况回答。"),
+    prompt: str = Form("请先理解语音内容，再结合健康监测数据给出简短回答。"),
     role: str = Form("elder"),
     device_mac: str | None = Form(None),
-) -> dict:
-    """Accept audio file and optional prompt, return Qwen-Omni multimodal answer."""
-    content_type = (file.content_type or "").split(";")[0].strip()
-    allowed = {"audio/wav", "audio/wave", "audio/webm", "audio/ogg", "audio/mpeg", "audio/mp3", "application/octet-stream"}
-    
-    if content_type not in allowed and not (file.filename or "").lower().endswith((".wav", ".mp3", ".m4a", ".webm")):
-         raise HTTPException(status_code=400, detail=f"Unsupported audio format: {content_type}")
+) -> dict[str, object]:
+    """Accept an audio clip and return configured omni text/audio output."""
+
+    content_type = (file.content_type or "").split(";", maxsplit=1)[0].strip().lower()
+    allowed = {
+        "audio/wav",
+        "audio/wave",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/aac",
+        "audio/amr",
+        "audio/3gpp",
+        "application/octet-stream",
+    }
+
+    filename = file.filename or "input.wav"
+    if content_type not in allowed and not filename.lower().endswith(
+        (".wav", ".mp3", ".m4a", ".aac", ".mp4", ".amr", ".3gp", ".3gpp")
+    ):
+        raise HTTPException(status_code=400, detail=f"Unsupported audio format: {content_type or 'unknown'}")
 
     audio_bytes = await file.read()
     if len(audio_bytes) < 100:
         raise HTTPException(status_code=400, detail="Audio file too small")
 
-    fmt = "wav"
-    name = (file.filename or "").lower()
-    if "mp3" in name or "mpeg" in content_type:
-        fmt = "mp3"
-    elif "webm" in name:
-        fmt = "webm"
+    fmt = _resolve_audio_format(filename, content_type)
+    result = _voice_service.omni_chat(
+        audio_bytes,
+        prompt=prompt,
+        fmt=fmt,
+        device_mac=device_mac,
+        role=role,
+    )
 
-    # Call VoiceService omni_chat
-    # Note: In a full implementation, we might want to inject device context (samples) 
-    # into the prompt before sending it to Omni.
-    result = _voice_service.omni_chat(audio_bytes, prompt=prompt, fmt=fmt, device_mac=device_mac)
-    
     if not result.get("ok"):
         raise HTTPException(status_code=500, detail=result.get("error") or "Omni analysis failed")
-    
+
     return result
 
+
 @router.get("/status")
-async def omni_status() -> dict:
+async def omni_status() -> dict[str, object]:
     return {
         "configured": bool(_settings.dashscope_api_key.strip() and _settings.qwen_omni_model_id),
         "model": _settings.qwen_omni_model_id,
-        "supported_modalities": ["audio", "text"]
+        "provider": "dashscope-compatible",
+        "supported_modalities": ["audio", "text"],
+        "output_modalities": ["text", "audio"],
     }

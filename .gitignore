@@ -11,3 +11,5 @@ data/
 backend/tmp_x.txt
 .cursor
 .agents
+.omni_test
+.log

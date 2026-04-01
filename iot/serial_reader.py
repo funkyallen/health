@@ -39,22 +39,27 @@ class SerialGatewayReader:
         return [
             port
             for port in ports
-            if any(
-                keyword in " ".join(
-                    [
-                        str(getattr(port, "device", "")),
-                        str(getattr(port, "description", "")),
-                        str(getattr(port, "manufacturer", "")),
-                        str(getattr(port, "hwid", "")),
-                    ]
-                ).lower()
-                for keyword in normalized_keywords
-            )
+            if self._port_matches_keywords(port, normalized_keywords)
         ]
 
     def detect_port(self, preferred_port: str | None = None, keywords: list[str] | None = None) -> str:
-        if preferred_port:
-            return preferred_port
+        normalized_preferred = (preferred_port or "").strip().upper()
+        ports = self.list_candidate_ports(None)
+        if normalized_preferred:
+            preferred_match = next(
+                (
+                    port
+                    for port in ports
+                    if str(getattr(port, "device", "")).strip().upper() == normalized_preferred
+                ),
+                None,
+            )
+            if preferred_match is not None:
+                return str(preferred_match.device)
+            logger.warning(
+                "Preferred serial collector port %s is unavailable; falling back to auto-detection.",
+                preferred_port,
+            )
 
         candidates = self.list_candidate_ports(keywords)
         if not candidates:
@@ -134,102 +139,157 @@ class SerialGatewayReader:
         enable_broadcast_sos_overlay: bool = False,
         response_cycle_seconds: float = 2.0,
         broadcast_cycle_seconds: float = 0.5,
+        reconnect_delay_seconds: float = 1.0,
         target_mac_provider: Callable[[], str | None] | None = None,
         on_sample: Callable[[HealthSample], None] | None = None,
     ) -> None:
         if serial is None:
             raise RuntimeError("pyserial is not installed; serial collection is unavailable.")
 
-        selected_port = self.detect_port(port, detection_keywords)
-        with serial.Serial(port=selected_port, baudrate=baudrate, timeout=1) as connection:
-            active_packet_type = packet_type
-            active_target_mac: str | None = None
-            cycle_started_at = time.monotonic()
-
-            if collection_strategy != "single_target" and auto_configure:
-                self.initialize_collector(
-                    connection,
-                    mac_filter=mac_filter,
-                    packet_type=packet_type,
-                    disable_uuid_output=disable_uuid_output,
-                    apply_mac_filter=apply_mac_filter,
-                    apply_packet_type=apply_packet_type,
-                )
-
-            while True:
-                if collection_strategy == "single_target":
-                    desired_target_mac = self._normalize_mac(target_mac_provider() if target_mac_provider else mac_filter)
-                    desired_packet_type = packet_type
-                    if enable_broadcast_sos_overlay:
-                        elapsed = time.monotonic() - cycle_started_at
-                        if active_packet_type == 5 and elapsed >= response_cycle_seconds:
-                            desired_packet_type = 4
-                        elif active_packet_type == 4 and elapsed >= broadcast_cycle_seconds:
-                            desired_packet_type = 5
-                        else:
-                            desired_packet_type = active_packet_type
-
-                    if desired_target_mac != active_target_mac or desired_packet_type != active_packet_type:
-                        if desired_target_mac:
-                            self.configure_single_target(
-                                connection,
-                                target_mac=desired_target_mac,
-                                packet_type=desired_packet_type,
-                            )
-                            active_target_mac = desired_target_mac
-                            active_packet_type = desired_packet_type
-                            cycle_started_at = time.monotonic()
-                        else:
-                            if active_target_mac:
-                                self.stop_scan(connection)
-                            active_target_mac = None
-                            active_packet_type = packet_type
-
-                    if not active_target_mac:
-                        time.sleep(0.2)
-                        continue
-
-                if collection_strategy != "single_target" and enable_broadcast_sos_overlay:
-                    elapsed = time.monotonic() - cycle_started_at
-                    target_packet_type = 5
-                    if active_packet_type == 5 and elapsed >= response_cycle_seconds:
-                        target_packet_type = 4
-                    elif active_packet_type == 4 and elapsed >= broadcast_cycle_seconds:
-                        target_packet_type = 5
-
-                    if target_packet_type != active_packet_type:
-                        self.switch_packet_type(connection, packet_type=target_packet_type)
-                        active_packet_type = target_packet_type
-                        cycle_started_at = time.monotonic()
-
-                line = connection.readline().decode("utf-8", errors="ignore").strip()
-                if not line:
-                    continue
-
-                payload, line_mac = self._extract_payload_and_mac(line)
-                if not payload:
-                    continue
-                normalized_line_mac = self._normalize_mac(line_mac)
-                if (
-                    collection_strategy == "single_target"
-                    and active_target_mac
-                    and normalized_line_mac
-                    and normalized_line_mac != active_target_mac
-                ):
-                    logger.debug(
-                        "Dropping serial payload for off-target MAC %s while tracking %s",
-                        normalized_line_mac,
-                        active_target_mac,
+        current_port: str | None = None
+        while True:
+            selected_port: str | None = None
+            try:
+                selected_port = self.detect_port(current_port or port, detection_keywords)
+                if selected_port != current_port:
+                    logger.info("Serial collector connected on %s", selected_port)
+                current_port = selected_port
+                with serial.Serial(port=selected_port, baudrate=baudrate, timeout=1) as connection:
+                    self._stream_connection(
+                        connection,
+                        collection_strategy=collection_strategy,
+                        packet_type=packet_type,
+                        mac_filter=mac_filter,
+                        fallback_device_mac=fallback_device_mac,
+                        auto_configure=auto_configure,
+                        disable_uuid_output=disable_uuid_output,
+                        apply_mac_filter=apply_mac_filter,
+                        apply_packet_type=apply_packet_type,
+                        enable_broadcast_sos_overlay=enable_broadcast_sos_overlay,
+                        response_cycle_seconds=response_cycle_seconds,
+                        broadcast_cycle_seconds=broadcast_cycle_seconds,
+                        target_mac_provider=target_mac_provider,
+                        on_sample=on_sample,
                     )
+            except KeyboardInterrupt:
+                raise
+            except Exception as exc:
+                retry_target = selected_port or current_port or port or "auto-detect"
+                logger.warning(
+                    "Serial collector unavailable on %s, retrying detection in %.1fs: %s",
+                    retry_target,
+                    reconnect_delay_seconds,
+                    exc,
+                )
+                current_port = None
+                time.sleep(reconnect_delay_seconds)
+
+    def _stream_connection(
+        self,
+        connection,
+        *,
+        collection_strategy: str,
+        packet_type: int,
+        mac_filter: str,
+        fallback_device_mac: str | None,
+        auto_configure: bool,
+        disable_uuid_output: bool,
+        apply_mac_filter: bool,
+        apply_packet_type: bool,
+        enable_broadcast_sos_overlay: bool,
+        response_cycle_seconds: float,
+        broadcast_cycle_seconds: float,
+        target_mac_provider: Callable[[], str | None] | None,
+        on_sample: Callable[[HealthSample], None] | None,
+    ) -> None:
+        active_packet_type = packet_type
+        active_target_mac: str | None = None
+        cycle_started_at = time.monotonic()
+
+        if collection_strategy != "single_target" and auto_configure:
+            self.initialize_collector(
+                connection,
+                mac_filter=mac_filter,
+                packet_type=packet_type,
+                disable_uuid_output=disable_uuid_output,
+                apply_mac_filter=apply_mac_filter,
+                apply_packet_type=apply_packet_type,
+            )
+
+        while True:
+            if collection_strategy == "single_target":
+                desired_target_mac = self._normalize_mac(target_mac_provider() if target_mac_provider else mac_filter)
+                desired_packet_type = packet_type
+                if enable_broadcast_sos_overlay:
+                    elapsed = time.monotonic() - cycle_started_at
+                    if active_packet_type == 5 and elapsed >= response_cycle_seconds:
+                        desired_packet_type = 4
+                    elif active_packet_type == 4 and elapsed >= broadcast_cycle_seconds:
+                        desired_packet_type = 5
+                    else:
+                        desired_packet_type = active_packet_type
+
+                if desired_target_mac != active_target_mac or desired_packet_type != active_packet_type:
+                    if desired_target_mac:
+                        self.configure_single_target(
+                            connection,
+                            target_mac=desired_target_mac,
+                            packet_type=desired_packet_type,
+                        )
+                        active_target_mac = desired_target_mac
+                        active_packet_type = desired_packet_type
+                        cycle_started_at = time.monotonic()
+                    else:
+                        if active_target_mac:
+                            self.stop_scan(connection)
+                        active_target_mac = None
+                        active_packet_type = packet_type
+
+                if not active_target_mac:
+                    time.sleep(0.2)
                     continue
 
-                sample = self._parser.feed(
-                    normalized_line_mac or fallback_device_mac or active_target_mac,
-                    payload,
-                    source=IngestionSource.SERIAL,
+            if collection_strategy != "single_target" and enable_broadcast_sos_overlay:
+                elapsed = time.monotonic() - cycle_started_at
+                target_packet_type = 5
+                if active_packet_type == 5 and elapsed >= response_cycle_seconds:
+                    target_packet_type = 4
+                elif active_packet_type == 4 and elapsed >= broadcast_cycle_seconds:
+                    target_packet_type = 5
+
+                if target_packet_type != active_packet_type:
+                    self.switch_packet_type(connection, packet_type=target_packet_type)
+                    active_packet_type = target_packet_type
+                    cycle_started_at = time.monotonic()
+
+            line = connection.readline().decode("utf-8", errors="ignore").strip()
+            if not line:
+                continue
+
+            payload, line_mac = self._extract_payload_and_mac(line)
+            if not payload:
+                continue
+            normalized_line_mac = self._normalize_mac(line_mac)
+            if (
+                collection_strategy == "single_target"
+                and active_target_mac
+                and normalized_line_mac
+                and normalized_line_mac != active_target_mac
+            ):
+                logger.debug(
+                    "Dropping serial payload for off-target MAC %s while tracking %s",
+                    normalized_line_mac,
+                    active_target_mac,
                 )
-                if sample and on_sample:
-                    on_sample(sample)
+                continue
+
+            sample = self._parser.feed(
+                normalized_line_mac or fallback_device_mac or active_target_mac,
+                payload,
+                source=IngestionSource.SERIAL,
+            )
+            if sample and on_sample:
+                on_sample(sample)
 
     def _run_commands(
         self,
@@ -331,3 +391,15 @@ class SerialGatewayReader:
         if len(compact) != 12:
             return None
         return SerialGatewayReader._format_mac(compact)
+
+    @staticmethod
+    def _port_matches_keywords(port: object, keywords: list[str]) -> bool:
+        haystack = " ".join(
+            [
+                str(getattr(port, "device", "")),
+                str(getattr(port, "description", "")),
+                str(getattr(port, "manufacturer", "")),
+                str(getattr(port, "hwid", "")),
+            ]
+        ).lower()
+        return any(keyword in haystack for keyword in keywords)

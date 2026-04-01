@@ -293,6 +293,145 @@ def test_demo_elder_account_ids_are_valid_binding_targets() -> None:
     assert DeviceService._is_demo_elder_user_id("family01") is False
 
 
+def test_formal_family_directory_infers_single_elder_without_explicit_relation(tmp_path) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="elder-solo",
+        name="鍗曚汉鑰佷汉",
+        phone="13900006661",
+        password="123456",
+        age=72,
+        apartment="5-501",
+    )
+    family = user_service.seed_family(
+        user_id="family-solo",
+        name="鍗曚汉瀹跺睘",
+        phone="13900006662",
+        password="123456",
+        relationship="daughter",
+        login_username="familysolo",
+    )
+    device_service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'care-formal-infer.db').as_posix()}",
+    )
+    relation_service = RelationService(user_service)
+    care_service = CareService(device_service, user_service, relation_service, Settings())
+
+    device_service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:10:01",
+            device_name="T10-WATCH",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    directory = care_service.get_family_directory(family.id)
+
+    assert [item.id for item in directory.elders] == [elder.id]
+
+
+def test_formal_family_access_profile_can_see_single_elder_bound_device_without_relation(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="elder-access",
+        name="鍙鑰佷汉",
+        phone="13900006671",
+        password="123456",
+        age=74,
+        apartment="6-601",
+    )
+    family = user_service.seed_family(
+        user_id="family-access",
+        name="鍙瀹跺睘",
+        phone="13900006672",
+        password="123456",
+        relationship="son",
+        login_username="familyaccess",
+    )
+    device_service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'care-formal-access.db').as_posix()}",
+    )
+    relation_service = RelationService(user_service)
+    care_service = CareService(device_service, user_service, relation_service, Settings())
+
+    device = device_service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:10:02",
+            device_name="T10-WATCH",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    monkeypatch.setattr(care_api, "get_device_service", lambda: device_service)
+    monkeypatch.setattr(care_api, "get_care_service", lambda: care_service)
+
+    elder_ids, devices = care_api._user_bound_devices(
+        SessionUser(
+            id=family.id,
+            username="familyaccess",
+            name=family.name,
+            role=UserRole.FAMILY,
+            community_id="community-haitang",
+            family_id=family.id,
+        )
+    )
+
+    assert elder_ids == [elder.id]
+    assert [item.mac_address for item in devices] == [device.mac_address]
+
+
+def test_formal_family_inference_stays_off_when_community_has_multiple_families(tmp_path) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="elder-shared",
+        name="澶氬搴€佷汉",
+        phone="13900006681",
+        password="123456",
+        age=76,
+        apartment="7-701",
+    )
+    first_family = user_service.seed_family(
+        user_id="family-first",
+        name="瀹跺睘涓€",
+        phone="13900006682",
+        password="123456",
+        relationship="daughter",
+        login_username="familyfirst",
+    )
+    user_service.seed_family(
+        user_id="family-second",
+        name="瀹跺睘浜?",
+        phone="13900006683",
+        password="123456",
+        relationship="son",
+        login_username="familysecond",
+    )
+    device_service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'care-formal-safe.db').as_posix()}",
+    )
+    relation_service = RelationService(user_service)
+    care_service = CareService(device_service, user_service, relation_service, Settings())
+
+    device_service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:10:03",
+            device_name="T10-WATCH",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    assert care_service.resolve_family_elder_ids(first_family.id) == []
+
+
 def test_serial_target_switch_api_returns_new_target(monkeypatch, tmp_path) -> None:
     service = DeviceService(
         UserService(),
