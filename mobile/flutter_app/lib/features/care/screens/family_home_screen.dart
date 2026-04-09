@@ -66,7 +66,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           '家人守护',
           style: TextStyle(
             color: AppColors.textMain,
-            fontSize: 22, // Increased from 20
+            fontSize: 30,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -222,15 +222,15 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textMain,
-                fontSize: 24, // Increased from 20
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             const Text(
               '等老人账号与家庭账号建立关联后，这里会显示对应的健康监测对象和设备状态。',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSub, fontSize: 16, height: 1.5),
+              style: TextStyle(color: AppColors.textSub, fontSize: 22, height: 1.5),
             ),
           ],
         ),
@@ -278,7 +278,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           Expanded(
             child: Text(
               '已开启自动刷新，会持续同步家庭关注对象的最新监测状态。',
-              style: TextStyle(color: AppColors.textSub, fontSize: 16, height: 1.4), // Added fontSize 16
+              style: TextStyle(color: AppColors.textSub, fontSize: 20, height: 1.4),
             ),
           ),
         ],
@@ -293,7 +293,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         title,
         style: const TextStyle(
           color: AppColors.textMain,
-          fontSize: 22, // Increased from 18
+          fontSize: 28,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -346,22 +346,23 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                           style: const TextStyle(
                             color: AppColors.textMain,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20, // Increased from 16
+                            fontSize: 28,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           '${subject.apartment} · ${metric.deviceName}',
                           style: const TextStyle(
                             color: AppColors.textSub,
-                            fontSize: 14, // Increased from 12
+                            fontSize: 20,
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           metric.deviceMac,
                           style: const TextStyle(
                             color: AppColors.textMuted,
-                            fontSize: 12, // Keep small for MAC
+                            fontSize: 16,
                           ),
                         ),
                       ],
@@ -383,7 +384,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                       style: TextStyle(
                         color:
                             healthy ? Colors.greenAccent : Colors.orangeAccent,
-                        fontSize: 14, // Increased from 12
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -441,15 +442,15 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                         style: const TextStyle(
                           color: AppColors.textMain,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20, // Increased from 16
+                          fontSize: 28,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         subject.apartment,
                         style: const TextStyle(
                           color: AppColors.textSub,
-                          fontSize: 14, // Increased from 12
+                          fontSize: 20,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -469,17 +470,17 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                     '无设备',
                     style: TextStyle(
                       color: AppColors.textSub,
-                      fontSize: 12,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             const Text(
               '当前还没有绑定手环，绑定后即可查看实时指标、异常告警和趋势曲线。',
-              style: TextStyle(color: AppColors.textSub, fontSize: 16, height: 1.5), // Increased from default/14
+              style: TextStyle(color: AppColors.textSub, fontSize: 22, height: 1.5),
             ),
           ],
         ),
@@ -497,12 +498,13 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           style: const TextStyle(
             color: AppColors.textMain,
             fontWeight: FontWeight.bold,
-            fontSize: 18, // Added fontSize 18
+            fontSize: 26,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(color: AppColors.textSub, fontSize: 14, fontWeight: FontWeight.w500), // Increased from 10
+          style: const TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -548,18 +550,18 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                     style: TextStyle(
                       color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20, // Increased from 16
+                      fontSize: 28,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     '语音转文字与合成播报',
-                    style: TextStyle(color: AppColors.textSub, fontSize: 16), // Increased from 12
+                    style: TextStyle(color: AppColors.textSub, fontSize: 20),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.textMuted),
+            const Icon(Icons.chevron_right, color: AppColors.textMuted),
           ],
         ),
       ),
@@ -622,18 +624,18 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                       style: TextStyle(
                         color: AppColors.textMain,
                         fontWeight: FontWeight.bold,
-                        fontSize: 20, // Increased from 16
+                        fontSize: 28,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       hasDevices
                           ? '支持围绕监测趋势、异常波动和家属跟进行动提问'
                           : '至少有一位老人绑定手环后，才能结合实时监测数据进行分析',
                       style: const TextStyle(
                         color: AppColors.textSub,
-                        fontSize: 16, // Increased from 12
-                        height: 1.3,
+                        fontSize: 22,
+                        height: 1.4,
                       ),
                     ),
                   ],

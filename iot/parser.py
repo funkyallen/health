@@ -169,7 +169,7 @@ class T10PacketParser:
             int.from_bytes(payload[marker_index + 6 : marker_index + 8], byteorder="big") / 100.0,
             2,
         )
-        sample_temperature = surface_temperature if 30.0 <= surface_temperature <= 45.0 else 30.0
+        sample_temperature = surface_temperature if 35.0 <= surface_temperature <= 45.0 else 0.0
         heart_rate = int.from_bytes(payload[marker_index + 8 : marker_index + 10], byteorder="big")
         blood_oxygen = int.from_bytes(payload[marker_index + 10 : marker_index + 12], byteorder="big")
         resolved_mac = self._normalize_mac(device_mac) if device_mac else None
@@ -273,7 +273,7 @@ class T10PacketParser:
             device_mac=normalized_mac,
             timestamp=timestamp,
             heart_rate=0,
-            temperature=body_temperature if 30.0 <= body_temperature <= 45.0 else 0.0,
+            temperature=body_temperature if 35.0 <= body_temperature <= 45.0 else 0.0,
             blood_oxygen=0,
             blood_pressure=f"{systolic}/{diastolic}",
             battery=0,

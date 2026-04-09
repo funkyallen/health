@@ -380,10 +380,10 @@ function buildChartOption(): RealtimeOption {
       },
     ],
     graphic: [
-      { type: "text", left: "23%", top: 24, style: { text: "心率", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
-      { type: "text", left: "73%", top: 24, style: { text: "血氧", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
-      { type: "text", left: "23%", top: "52%", style: { text: "血压", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
-      { type: "text", left: "73%", top: "52%", style: { text: "体温", fill: "rgba(15, 23, 42, 0.08)", fontWeight: 800, fontSize: 46, align: "center" } },
+      { type: "text", left: "23%", top: 24, style: { text: "心率", fill: "rgba(15, 23, 42, 0.8)", fontWeight: 800, fontSize: 56, align: "center" } },
+      { type: "text", left: "73%", top: 24, style: { text: "血氧", fill: "rgba(15, 23, 42, 0.8)", fontWeight: 800, fontSize: 56, align: "center" } },
+      { type: "text", left: "23%", top: "52%", style: { text: "血压", fill: "rgba(15, 23, 42, 0.8)", fontWeight: 800, fontSize: 56, align: "center" } },
+      { type: "text", left: "73%", top: "52%", style: { text: "体温", fill: "rgba(15, 23, 42, 0.8)", fontWeight: 800, fontSize: 56, align: "center" } },
     ],
   };
 }

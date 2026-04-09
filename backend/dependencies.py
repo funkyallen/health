@@ -154,6 +154,20 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
             device_mac=sample.device_mac,
         )
 
+    # 如果上报参数为0或缺失，继承上一时刻的数据，仅向数据库写入有效数值
+    latest_sample = _stream_service.latest(sample.device_mac)
+    if latest_sample:
+        if sample.heart_rate in (0, None):
+            sample.heart_rate = latest_sample.heart_rate
+        if sample.temperature in (0.0, None):
+            sample.temperature = latest_sample.temperature
+        if sample.blood_oxygen in (0, None):
+            sample.blood_oxygen = latest_sample.blood_oxygen
+        if sample.blood_pressure in (None, "", "0/0"):
+            sample.blood_pressure = latest_sample.blood_pressure
+        if sample.steps in (0, None):
+            sample.steps = latest_sample.steps
+
     # 正常的持久化和流分发逻辑...
     _health_data_repository.persist_sample(sample)
     _stream_service.publish(sample)
@@ -1024,15 +1038,25 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         raise RuntimeError("Device must be registered before ingest in formal mode")
 
     _device_service.update_status(sample.device_mac, DeviceStatus.ONLINE)
-    
-    # SOS 广播包是"告警信号包"，不是完整生命体征包。
-    # 直接评估 SOS，不做 _merge_with_latest 和 is_display_ready_sample 过滤。
-    is_sos_signal = sample.sos_flag and sample.packet_type == "broadcast"
-    
-    if not is_sos_signal:
-        sample = _merge_with_latest(sample)
 
-    alarms = []
+    # 【性能优化】第一时间评估并提取实时告警（包括SOS）。直接评估未 merged 的 sample_0。
+    realtime_alarms = _alarm_service.evaluate(sample)
+    
+    # 若有紧急告警，第一时间 WebSocket 广播，避免被后续同步数据库写操作阻塞而导致高延迟
+    if realtime_alarms:
+        _health_data_repository.persist_alerts(realtime_alarms)
+        for alarm in realtime_alarms:
+            await _websocket_manager.broadcast_alarm(alarm.model_dump(mode="json"))
+        await _websocket_manager.broadcast_alarm_queue(
+            {
+                "type": "alarm_queue",
+                "queue": [item.model_dump(mode="json") for item in _alarm_service.queue_items(active_only=True)],
+                "snapshot": _alarm_service.queue_snapshot(),
+            }
+        )
+
+    # 之后合并历史以填补异常的0或缺失数据，保证展示与入库的质量
+    sample = _merge_with_latest(sample)
 
     baseline = _baseline_tracker.observe(sample)
     sample.health_score = _health_score_service.score(sample, baseline)
@@ -1042,8 +1066,8 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         timestamp=sample.timestamp,
     )
     _stream_service.publish(sample)
-    alarms = _alarm_service.evaluate(sample)
 
+    ml_alarms = []
     intelligent_result = _intelligent_scorer.infer_device(
         sample.device_mac,
         _stream_service.recent_in_window(sample.device_mac, minutes=60, limit=360),
@@ -1052,7 +1076,7 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
     if intelligent_result:
         intelligent_alarm = _intelligent_scorer.build_alarm(sample, intelligent_result)
         if intelligent_alarm:
-            alarms.extend(_alarm_service.evaluate_alarm_records([intelligent_alarm]))
+            ml_alarms.extend(_alarm_service.evaluate_alarm_records([intelligent_alarm]))
 
     now = sample.timestamp.astimezone(timezone.utc)
     if _last_community_alarm_at is None or now - _last_community_alarm_at >= timedelta(hours=1):
@@ -1062,17 +1086,13 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         )
         community_alarm = _community_clusterer.build_alarm(community_summary)
         if community_alarm:
-            alarms.extend(_alarm_service.evaluate_alarm_records([community_alarm]))
+            ml_alarms.extend(_alarm_service.evaluate_alarm_records([community_alarm]))
             _last_community_alarm_at = now
 
-    if alarms:
-        _health_data_repository.persist_alerts(alarms)
-
-    await _websocket_manager.broadcast_health(sample.device_mac, sample.model_dump(mode="json"))
-
-    for alarm in alarms:
-        await _websocket_manager.broadcast_alarm(alarm.model_dump(mode="json"))
-    if alarms:
+    if ml_alarms:
+        _health_data_repository.persist_alerts(ml_alarms)
+        for alarm in ml_alarms:
+            await _websocket_manager.broadcast_alarm(alarm.model_dump(mode="json"))
         await _websocket_manager.broadcast_alarm_queue(
             {
                 "type": "alarm_queue",
@@ -1081,4 +1101,7 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
             }
         )
 
-    return IngestResponse(sample=sample, triggered_alarm_ids=[alarm.id for alarm in alarms])
+    await _websocket_manager.broadcast_health(sample.device_mac, sample.model_dump(mode="json"))
+
+    all_alarms = (realtime_alarms or []) + (ml_alarms or [])
+    return IngestResponse(success=True, message="Sample ingested", device_mac=sample.device_mac)
