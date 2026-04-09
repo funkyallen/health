@@ -551,8 +551,8 @@ function submitFreeChat() {
 .agent-message__bubble p {
   margin: 0;
   white-space: pre-wrap;
-  line-height: 1.85;
-  font-size: 1.15rem;
+  line-height: 1.9;
+  font-size: 1.3rem;
 }
 
 .agent-composer {

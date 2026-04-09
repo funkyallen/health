@@ -93,7 +93,7 @@ class SerialGatewayReader:
         *,
         target_mac: str,
         packet_type: int = 5,
-        command_delay_seconds: float = 0.05,
+        command_delay_seconds: float = 0.02,
     ) -> None:
         compact_mac = self._compact_mac(target_mac)
         commands = [
@@ -341,20 +341,18 @@ class SerialGatewayReader:
 
     @staticmethod
     def _extract_prefixed_payload(compact: str) -> tuple[str | None, str | None]:
-        if len(compact) < 16:
-            return None, None
-
-        candidate_mac = compact[2:14]
-        candidate_payload = compact[14:]
-        if len(candidate_payload) % 2 != 0:
-            return None, None
-
-        if candidate_payload.startswith(BROADCAST_MARKER):
-            return candidate_payload, SerialGatewayReader._format_mac(candidate_mac)
-
-        if RESPONSE_A_MARKER in candidate_payload or RESPONSE_B_MARKER in candidate_payload:
-            return candidate_payload, SerialGatewayReader._format_mac(candidate_mac)
-
+        # Try finding markers and working backwards for the MAC
+        for marker in [BROADCAST_MARKER, RESPONSE_A_MARKER, RESPONSE_B_MARKER]:
+            idx = compact.find(marker)
+            if idx >= 12:
+                mac_candidate = compact[idx-12:idx]
+                payload_candidate = compact[idx:]
+                return payload_candidate, SerialGatewayReader._format_mac(mac_candidate)
+        
+        # Fallback to fixed offsets if no marker but long enough (e.g. raw dump)
+        if len(compact) >= 12:
+            return compact, None
+            
         return None, None
 
     @staticmethod

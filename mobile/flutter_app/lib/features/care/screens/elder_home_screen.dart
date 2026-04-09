@@ -5,6 +5,7 @@ import '../../../widgets/logout_action.dart';
 import '../../agent/widgets/ai_chat_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../voice/screens/voice_screen.dart';
 import '../models/care_profile_model.dart';
 import '../providers/care_provider.dart';
 
@@ -16,20 +17,17 @@ class ElderHomeScreen extends StatefulWidget {
 }
 
 class _ElderHomeScreenState extends State<ElderHomeScreen> {
-  late CareProvider _careProvider;
-
   @override
   void initState() {
     super.initState();
-    _careProvider = context.read<CareProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _careProvider.startAutoRefresh();
+      context.read<CareProvider>().startAutoRefresh();
     });
   }
 
   @override
   void dispose() {
-    _careProvider.stopAutoRefresh();
+    context.read<CareProvider>().stopAutoRefresh();
     super.dispose();
   }
 
@@ -134,7 +132,17 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                 ),
               ],
             ),
-
+            const SizedBox(height: 20),
+            _buildBigButton(
+              Icons.mic,
+              '语音对话',
+              Colors.purple,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const VoiceScreen(),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             _buildBigButton(
               Icons.auto_awesome,
@@ -676,12 +684,9 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
       SnackBar(
         content: Text(
           success ? '手环已成功登记并绑定' : (provider.errorMessage ?? '绑定手环失败，请稍后重试'),
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18),
         ),
-        backgroundColor: success ? AppColors.success : AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
+        backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
       ),
     );
   }
@@ -728,30 +733,20 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   }
 
   String _normalizeMacInput(String rawValue) {
-    if (rawValue.isEmpty) return '';
-    
-    // 强制去除所有非十六进制字符、空格、不可见字符，并转大写
-    final compact = rawValue
-        .replaceAll(RegExp(r'[^0-9A-Fa-f]'), '')
-        .trim()
-        .toUpperCase();
-        
-    // 如果不是 12 位，可能是输入中或格式错误，返回清洗后的原始大写（供 isValidMac 验证）
+    final compact =
+        rawValue.replaceAll(RegExp(r'[^0-9A-Fa-f]'), '').toUpperCase();
     if (compact.length != 12) {
-      return compact;
+      return rawValue.trim().toUpperCase();
     }
-
-    // 标准格式化为 AA:BB:CC:DD:EE:FF
     final parts = <String>[];
-    for (var i = 0; i < 12; i += 2) {
-      parts.add(compact.substring(i, i + 2));
+    for (var index = 0; index < compact.length; index += 2) {
+      parts.add(compact.substring(index, index + 2));
     }
     return parts.join(':');
   }
 
   bool _isValidMac(String value) {
-    if (value.isEmpty) return false;
-    final compact = value.replaceAll(':', '').trim();
+    final compact = value.replaceAll(':', '');
     return RegExp(r'^[0-9A-F]{12}$').hasMatch(compact);
   }
 }

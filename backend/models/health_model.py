@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
@@ -62,5 +62,8 @@ class HealthTrendPoint(BaseModel):
 
 
 class IngestResponse(BaseModel):
-    sample: HealthSample
+    success: bool = True
+    message: str = "Sample ingested"
+    device_mac: str | None = None
+    sample: HealthSample | None = None
     triggered_alarm_ids: list[str] = Field(default_factory=list)

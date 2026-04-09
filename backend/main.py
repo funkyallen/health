@@ -281,7 +281,7 @@ async def _serial_stream_loop() -> None:
 
     def publish_from_thread(sample):
         _serial_logger.info(
-            'Serial sample: mac=%s type=%s hr=%s spo2=%s temp=%s steps=%s bp=%s',
+            'Serial sample: mac=%s type=%s hr=%s spo2=%s temp=%s steps=%s bp=%s sos=%s',
             sample.device_mac,
             sample.packet_type,
             sample.heart_rate,
@@ -289,9 +289,25 @@ async def _serial_stream_loop() -> None:
             sample.temperature,
             sample.steps,
             sample.blood_pressure,
+            sample.sos_flag,
         )
+        if sample.sos_flag:
+            _serial_logger.warning(
+                '🚨 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) — forwarding to ingest immediately',
+                sample.device_mac,
+                sample.sos_trigger,
+                sample.sos_value,
+                sample.packet_type,
+            )
         future = asyncio.run_coroutine_threadsafe(ingest_sample(sample), loop)
-        future.result()
+        # Fire-and-forget: do NOT block the serial reader thread.
+        # Attach an error callback so ingestion failures are logged
+        # without stalling the serial data pipeline.
+        def _on_done(fut):
+            exc = fut.exception()
+            if exc:
+                _serial_logger.error("Ingest failed for %s: %s", sample.device_mac, exc)
+        future.add_done_callback(_on_done)
 
     await asyncio.to_thread(
         reader.run,

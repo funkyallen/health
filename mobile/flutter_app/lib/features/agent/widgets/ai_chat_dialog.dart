@@ -47,7 +47,9 @@ class _AiChatDialogState extends State<AiChatDialog> {
         return;
       }
       final voiceProvider = context.read<VoiceProvider>();
-      if (voiceProvider.status == VoiceLoadStatus.initial) {
+      if (voiceProvider.status == VoiceLoadStatus.initial ||
+          voiceProvider.status == VoiceLoadStatus.error ||
+          !voiceProvider.isVoiceAvailable) {
         voiceProvider.checkStatus();
       }
       context.read<AgentProvider>().init(_experience.introMessage);
@@ -539,9 +541,9 @@ class _AiChatDialogState extends State<AiChatDialog> {
       return '正在检查语音服务，请稍候';
     }
     if (voiceProvider.status == VoiceLoadStatus.error) {
-      return voiceProvider.errorMessage ?? '语音服务状态获取失败';
+      return voiceProvider.errorMessage ?? '无法连接后端服务，请检查服务器是否启动';
     }
-    return '语音服务未配置，请先在后端设置 DASHSCOPE_API_KEY';
+    return '语音服务未就绪，请确认后端已启动且 DASHSCOPE_API_KEY 已配置';
   }
 
   Widget _buildVoiceQuickEntry(VoiceProvider voiceProvider) {

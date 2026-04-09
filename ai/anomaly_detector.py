@@ -123,6 +123,8 @@ class RealtimeAnomalyDetector:
                         "检测到手环长按 SOS 求助，请立即联系值守人员并安排现场核查。"
                         if trigger == "long_press"
                         else "检测到手环双击 SOS 求助，请立即联系值守人员并安排现场核查。"
+                        if trigger == "double_click"
+                        else "检测到手环紧急 SOS 求助，请立即联系值守人员并安排现场核查。"
                     ),
                     anomaly_probability=1.0,
                     metadata={

@@ -110,6 +110,10 @@ function connectAlarmSocket() {
   };
   alarmChannel.onclose = () => {
     alarmChannel = null;
+    // Auto-reconnect after 2 seconds for real-time SOS delivery
+    setTimeout(() => {
+      if (isCommunityWorkspace.value) connectAlarmSocket();
+    }, 2000);
   };
 }
 
@@ -119,7 +123,7 @@ function startAlarmRuntime() {
   connectAlarmSocket();
   refreshTimer = window.setInterval(() => {
     void refreshAlarmState();
-  }, 15000);
+  }, 5000);
 }
 
 watch(() => props.sessionUser.id, () => {

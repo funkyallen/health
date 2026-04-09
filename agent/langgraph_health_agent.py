@@ -2070,32 +2070,31 @@ class HealthAgentService:
             yield from self._iter_stream_fragments(fallback_text)
 
     def _iter_stream_fragments(self, text: str) -> Iterator[str]:
-        normalized = str(text).strip()
-        if not normalized:
+        if not text:
             return
 
         fragments = [
             item
-            for item in re.split(r"(?<=[，。！？；：,.!?;\n])", normalized)
-            if item and item.strip()
+            for item in re.split(r"(?<=[，。！？；：,.!?;\n])", text)
+            if item
         ]
         if not fragments:
-            fragments = [normalized]
+            fragments = [text]
 
         for fragment in fragments:
             current = fragment
-            while len(current) > 10:
-                split_at = 8
+            while len(current) > 20:
+                split_at = 15
                 for separator in ("，", "。", "！", "？", "；", "：", ",", ".", "!", "?", ";", "\n", " "):
-                    candidate = current.rfind(separator, 0, 10)
+                    candidate = current.rfind(separator, 0, 20)
                     if candidate >= 3:
                         split_at = candidate + 1
                         break
                 piece = current[:split_at]
-                if piece.strip():
+                if piece:
                     yield piece
                 current = current[split_at:]
-            if current.strip():
+            if current:
                 yield current
 
     def _stream_invoke_local(

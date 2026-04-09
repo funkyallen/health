@@ -63,6 +63,7 @@ _alarm_service = AlarmService(
     detector=_realtime_detector,
     queue=_alarm_priority_queue,
     notification_service=_notification_service,
+    sos_dedupe_window_seconds=_settings.sos_broadcast_window_seconds,
 )
 _baseline_tracker = BaselineTracker()
 _health_score_service = DemoHealthScoreService(floor=_settings.health_score_floor)
@@ -143,43 +144,9 @@ _warning_service = WarningService(health_score_service=_structured_health_score_
 _last_community_alarm_at: datetime | None = None
 
 
-async def ingest_sample(sample: HealthSample) -> IngestResponse:
-    """Ingest a single health sample, triggering alerts and persistence."""
-    device = _device_service.get_device(sample.device_mac)
-    if device and device.status == DeviceStatus.OFFLINE:
-        # 熔断机制：离线设备不接受新数据
-        return IngestResponse(
-            success=False,
-            message="Device is offline, sample dropped",
-            device_mac=sample.device_mac,
-        )
-
-    # 如果上报参数为0或缺失，继承上一时刻的数据，仅向数据库写入有效数值
-    latest_sample = _stream_service.latest(sample.device_mac)
-    if latest_sample:
-        if sample.heart_rate in (0, None):
-            sample.heart_rate = latest_sample.heart_rate
-        if sample.temperature in (0.0, None):
-            sample.temperature = latest_sample.temperature
-        if sample.blood_oxygen in (0, None):
-            sample.blood_oxygen = latest_sample.blood_oxygen
-        if sample.blood_pressure in (None, "", "0/0"):
-            sample.blood_pressure = latest_sample.blood_pressure
-        if sample.steps in (0, None):
-            sample.steps = latest_sample.steps
-
-    # 正常的持久化和流分发逻辑...
-    _health_data_repository.persist_sample(sample)
-    _stream_service.publish(sample)
-
-    # 触发告警评估
-    _alarm_service.evaluate(sample)
-
-    return IngestResponse(
-        success=True,
-        message="Sample ingested",
-        device_mac=sample.device_mac,
-    )
+# NOTE: ingest_sample is defined further below (after helper functions)
+# to access all required services. See the async def ingest_sample(...)
+# near the end of this module.
 
 # 始终 seed mock 设备，用于 demo overlay 和 AI 模型预热
 # serial/mqtt 模式下 mock 设备以 ingest_mode=mock 标记，与真实串口设备区分
@@ -458,13 +425,11 @@ def is_display_ready_sample(sample: HealthSample, ingest_mode: DeviceIngestMode 
         return True
     if effective == DeviceIngestMode.SERIAL:
         # 串口模式：收到即更新，缺失字段由 _merge_with_latest 回填上一时刻值。
-        # 只要有至少一项有效生命体征即可展示（不同包携带不同字段）。
-        has_any_vital = (
-            sample.heart_rate > 0
-            or sample.blood_oxygen > 0
-            or sample.temperature > 0
-        )
-        return has_any_vital
+        if sample.heart_rate <= 0 or sample.blood_oxygen <= 0:
+            return False
+        if sample.temperature <= 0:
+            return False
+        return True
     return True
 
 
@@ -1020,9 +985,6 @@ def _merge_with_latest(sample: HealthSample) -> HealthSample:
         update["surface_temperature"] = latest.surface_temperature
     if not sample.device_uuid and latest.device_uuid:
         update["device_uuid"] = latest.device_uuid
-    # 健康评分在 ingest 管线末端计算；此处沿用上一时刻评分，避免 UI 闪"--"。
-    if sample.health_score is None and latest.health_score is not None:
-        update["health_score"] = latest.health_score
 
     return sample.model_copy(update=update) if update else sample
 

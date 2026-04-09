@@ -104,7 +104,7 @@ class Settings(BaseSettings):
     serial_baudrate: int = 115200
     serial_collection_strategy: Literal["single_target", "static_filter"] = "single_target"
     serial_packet_type: int = 5
-    serial_packet_merge_timeout_seconds: float = 0.5
+    serial_packet_merge_timeout_seconds: float = 5.0
     serial_mac_filter: str = "53:57:08:00:00:00"
     serial_detection_keywords: list[str] = Field(
         default_factory=lambda: ["cp210", "usb serial", "nrf", "silicon labs"]

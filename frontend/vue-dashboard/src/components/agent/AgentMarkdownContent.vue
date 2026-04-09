@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { renderMarkdown } from "../../utils/markdown";
 
 const props = withDefaults(
@@ -17,19 +17,30 @@ const props = withDefaults(
 const renderedHtml = ref("");
 
 let timer: ReturnType<typeof setTimeout> | null = null;
-const DEBOUNCE_MS = 60;
+const DEBOUNCE_MS = 32;
 
-function updateRenderedHtml() {
-  const streaming = props.streaming || props.variant === "report";
+function updateRenderedHtml(forceNonStreaming = false) {
+  const streaming = forceNonStreaming
+    ? false
+    : props.streaming || props.variant === "report";
   renderedHtml.value = renderMarkdown(props.content, { streaming });
 }
 
+// streaming 结束 (true->false) 或 variant 切换时，立即做完整渲染，
+// 确保最终内容是正确的 HTML 而非残留的原始 markdown。
 watch(
   () => [props.variant, props.streaming],
-  () => {
-    // Variant 切换时立即更新一次，避免样式/渲染模式滞后。
+  (_next, prev) => {
     if (timer) clearTimeout(timer);
     updateRenderedHtml();
+    // streaming 刚结束时，连续两帧兜底渲染（非流式模式），
+    // 防止 content 尾部 delta 未合入或 watcher 执行顺序不确定。
+    if (prev && prev[1] === true && !props.streaming) {
+      nextTick(() => {
+        updateRenderedHtml(true);
+        nextTick(() => updateRenderedHtml(true));
+      });
+    }
   },
 );
 
@@ -42,12 +53,20 @@ watch(
       return;
     }
 
-    // 尽量保持“流式可见”，但避免每次更新都触发 markdown-it 全量重排。
-    const shouldUpdateImmediately = renderedHtml.value === "" || text.length < 120;
+    // 流式结束后，任何 content 变化都立即渲染（最终答案设置）
+    if (!props.streaming) {
+      if (timer) clearTimeout(timer);
+      updateRenderedHtml(true);
+      return;
+    }
 
+    // 流式输出中：每次 delta 都立即渲染，保证用户永远看到 HTML 而非原始 markdown
     if (timer) clearTimeout(timer);
-    if (shouldUpdateImmediately) updateRenderedHtml();
-    else timer = setTimeout(() => updateRenderedHtml(), DEBOUNCE_MS);
+    timer = setTimeout(() => updateRenderedHtml(), DEBOUNCE_MS);
+    // 首次或短文本立即渲染，无需等待 debounce
+    if (renderedHtml.value === "" || text.length < 300) {
+      updateRenderedHtml();
+    }
   },
   { immediate: true },
 );
@@ -64,18 +83,18 @@ watch(
 <style scoped>
 .agent-markdown {
   color: var(--text-main);
-  line-height: 1.75;
+  line-height: 1.85;
   overflow-x: auto;
   overflow-wrap: anywhere;
 }
 
 .agent-markdown--bubble {
-  font-size: 0.95rem;
+  font-size: 1.22rem;
 }
 
 .agent-markdown--report {
-  font-size: 1.02rem;
-  line-height: 1.85;
+  font-size: 1.28rem;
+  line-height: 1.9;
 }
 
 .agent-markdown :deep(*:first-child) {
@@ -100,21 +119,21 @@ watch(
 }
 
 .agent-markdown :deep(h1) {
-  font-size: 1.45rem;
+  font-size: 1.9rem;
   padding-bottom: 0.4em;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .agent-markdown :deep(h2) {
-  font-size: 1.25rem;
+  font-size: 1.62rem;
 }
 
 .agent-markdown :deep(h3) {
-  font-size: 1.15rem;
+  font-size: 1.42rem;
 }
 
 .agent-markdown :deep(h4) {
-  font-size: 1.05rem;
+  font-size: 1.3rem;
 }
 
 .agent-markdown :deep(p),
@@ -133,39 +152,50 @@ watch(
 }
 
 .agent-markdown :deep(li + li) {
-  margin-top: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.agent-markdown :deep(li) {
+  font-size: 1.18rem;
 }
 
 .agent-markdown :deep(li::marker) {
   color: #64748b;
 }
 
+.agent-markdown :deep(strong) {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 .agent-markdown :deep(blockquote) {
   margin-left: 0;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
   border-left: 4px solid var(--brand, #3b82f6);
   border-radius: 4px 12px 12px 4px;
   background: #f8fafc;
   color: #475569;
   font-style: normal;
+  font-size: 1.15rem;
 }
 
 .agent-markdown :deep(code) {
-  padding: 0.2rem 0.4rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 0.375rem;
   background: #f1f5f9;
   color: #0f172a;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.9em;
+  font-size: 0.88em;
 }
 
 .agent-markdown :deep(pre) {
-  padding: 1rem;
+  padding: 1.1rem;
   border-radius: 0.75rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #334155;
   overflow-x: auto;
+  font-size: 1.05rem;
 }
 
 .agent-markdown :deep(pre code) {
@@ -178,14 +208,14 @@ watch(
 
 .agent-markdown :deep(table) {
   width: 100%;
-  margin: 1.25rem 0;
+  margin: 1.5rem 0;
   border-collapse: separate;
   border-spacing: 0;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   table-layout: auto;
 }
 
@@ -197,17 +227,19 @@ watch(
   color: #334155;
   font-weight: 600;
   text-align: left;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.1rem;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+  font-size: 1.1rem;
 }
 
 .agent-markdown :deep(td) {
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.1rem;
   border-bottom: 1px solid #e2e8f0;
   color: #475569;
   vertical-align: top;
-  line-height: 1.6;
+  line-height: 1.65;
+  font-size: 1.1rem;
 }
 
 .agent-markdown :deep(tr:nth-child(even) td) {
